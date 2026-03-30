@@ -1,0 +1,1737 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Digital Force Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <style>
+    :root{
+      --bg: linear-gradient(180deg, #fff8f3 0%, #f7f8fb 22%, #eef3f8 100%);
+      --sidebar: linear-gradient(180deg, #131313 0%, #18110d 50%, #20120a 100%);
+      --sidebarText: #e4e4e7;
+      --sidebarActive: linear-gradient(90deg, rgba(243,112,33,.24), rgba(255,168,76,.14));
+      --utOrange: #f37021;
+      --utOrangeDark: #cf4f09;
+      --utOrangeSoft: #fff1e7;
+      --textMain: #1f2937;
+      --textSoft: #6b7280;
+      --cardShadow: 0 16px 38px rgba(15, 23, 42, .08);
+      --cardBorder: rgba(15, 23, 42, .08);
+      --tableHead: #fff6ef;
+      --tableStripe: #fffdfb;
+      --metricBg: linear-gradient(135deg, #ffffff 0%, #fff6ef 100%);
+    }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--textMain);
+    }
+
+    .sidebar{
+      width: 250px; min-height: 100vh; position: fixed; left: 0; top: 0;
+      background: var(--sidebar); color: #fff;
+      box-shadow: 12px 0 28px rgba(0,0,0,.18);
+    }
+    .brand{
+      padding: 20px 16px 18px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .brand-stack{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .brand-top{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo-ut{
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      display: block;
+      border-radius: 8px;
+      background: #fff;
+      padding: 2px;
+    }
+
+    .brand-corp-text{
+      display: flex;
+      flex-direction: column;
+      line-height: 1.05;
+    }
+
+    .brand-corp-title{
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      color: #ffffff;
+    }
+
+    .brand-corp-sub{
+      font-size: 0.78rem;
+      color: #7db7ff;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .brand-bottom{
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-title{
+      font-size: 1.00rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.15;
+    }
+
+    .brand-sub{
+      font-size: 0.75rem;
+      color: rgba(255,255,255,.72);
+      line-height: 1.2;
+    }
+
+    .sidebar a{
+      color: var(--sidebarText);
+      text-decoration:none;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      margin: 6px 10px;
+      border: 1px solid transparent;
+      transition: all .2s ease;
+    }
+    .sidebar a:hover{
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      transform: translateX(2px);
+    }
+    .sidebar a.active{
+      background: var(--sidebarActive);
+      color: #fff;
+      border: 1px solid rgba(243,112,33,.22);
+      box-shadow: inset 3px 0 0 var(--utOrange);
+    }
+    .sidebar .nav-icon{ width: 18px; opacity: .95; }
+
+    .content{ margin-left: 270px; padding: 18px 20px 36px; }
+
+    .topbar{
+      background: linear-gradient(135deg, #ffffff 0%, #fff7f0 100%);
+      border: 1px solid rgba(243,112,33,.10);
+      border-radius: 22px;
+      box-shadow: var(--cardShadow);
+      padding: 16px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .topbar::after{
+      content: "";
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(243,112,33,.12) 0%, rgba(243,112,33,0) 70%);
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(243,112,33,.10);
+      color: #7a2f07;
+      border: 1px solid rgba(243,112,33,.18);
+      font-weight: 600;
+      font-size: .85rem;
+    }
+
+    .card-kpi{
+      border: 1px solid var(--cardBorder);
+      border-radius: 22px;
+      box-shadow: var(--cardShadow);
+      background: rgba(255,255,255,.94);
+      overflow: hidden;
+    }
+    .card-kpi::before{
+      content: "";
+      display: block;
+      height: 4px;
+      background: linear-gradient(90deg, var(--utOrange), #ffb36b);
+      opacity: .9;
+    }
+    .card-kpi .card-body{ padding: 16px 16px; }
+
+    .metric-box{
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--metricBg);
+      border: 1px solid rgba(243,112,33,.08);
+    }
+
+    .summary-grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    .summary-card{
+      grid-column: span 12;
+      border: 1px solid rgba(243,112,33,.10);
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(255,255,255,.98) 0%, rgba(255,244,235,.96) 100%);
+      box-shadow: var(--cardShadow);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .summary-card::after{
+      content: "";
+      position: absolute;
+      right: -24px;
+      top: -24px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(243,112,33,.14) 0%, rgba(243,112,33,0) 72%);
+    }
+    .summary-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+    .summary-label{ color: var(--textSoft); font-size: .88rem; margin-bottom: 8px; }
+    .summary-value{ font-size: 2rem; font-weight: 800; line-height: 1.1; color: #111827; }
+    .summary-note{ color: var(--textSoft); font-size: .82rem; margin-top: 8px; }
+    .summary-icon{
+      width: 42px; height: 42px; border-radius: 14px;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(243,112,33,.12); color: var(--utOrangeDark);
+      border: 1px solid rgba(243,112,33,.14);
+      font-size: 1.1rem;
+      flex: 0 0 auto;
+    }
+    @media(min-width: 768px){ .summary-card{ grid-column: span 6; } }
+    @media(min-width: 1200px){ .summary-card{ grid-column: span 3; } }
+
+    .rule-box{
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #fffdf9 0%, #fff4ea 100%);
+      border: 1px dashed rgba(243,112,33,.28);
+    }
+    .rule-grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+    }
+    .rule-item{ grid-column: span 12; }
+    @media(min-width: 768px){ .rule-item{ grid-column: span 4; } }
+    .rule-chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 12px; border-radius: 999px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(243,112,33,.16);
+      color: #7a2f07; font-weight: 600; font-size: .86rem;
+    }
+    .rule-chip i{ color: var(--utOrangeDark); }
+
+    .badge-eval{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 5px 10px; border-radius: 999px;
+      font-size: .78rem; font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .badge-eval.ok{ background: rgba(34,197,94,.14); color: #166534; border-color: rgba(34,197,94,.18); }
+    .badge-eval.warn{ background: rgba(245,158,11,.16); color: #92400e; border-color: rgba(245,158,11,.20); }
+    .badge-eval.danger{ background: rgba(239,68,68,.14); color: #991b1b; border-color: rgba(239,68,68,.18); }
+    .badge-eval.na{ background: rgba(100,116,139,.12); color: #475569; border-color: rgba(100,116,139,.18); }
+
+    .star-row{ display:inline-flex; gap:2px; vertical-align:middle; }
+    .star-row .filled{ color:#f59e0b; }
+    .star-row .empty{ color:#cbd5e1; }
+    .info-banner{
+      padding: 12px 14px; border-radius: 16px;
+      background: linear-gradient(135deg, #fffdfa 0%, #fff4ea 100%);
+      border: 1px dashed rgba(243,112,33,.25);
+    }
+
+    .small-muted{ color: var(--textSoft); font-size: .9rem; }
+    .mono{ font-variant-numeric: tabular-nums; }
+    .badge-soft{ background: rgba(243,112,33,.12); color: #7a2f07; border: 1px solid rgba(243,112,33,.2); }
+    .hr-soft{ border-top: 1px solid rgba(0,0,0,.06); opacity: 1; }
+
+    .section{ display: none; }
+    .section.active{ display: block; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+    .kpi-grid .kpi-item { grid-column: span 12; }
+    @media(min-width: 768px){ .kpi-grid .kpi-item { grid-column: span 6; } }
+    @media(min-width: 1200px){ .kpi-grid .kpi-item { grid-column: span 4; } }
+
+    .kpi-title{ font-weight: 800; }
+    .kpi-sub{ font-size: .85rem; color: var(--textSoft); }
+    .kpi-value{ font-size: 2rem; font-weight: 800; line-height: 1; color: #111827; }
+    .kpi-empty{
+      border: 1px dashed rgba(243,112,33,.28);
+      border-radius: 22px;
+      background: linear-gradient(135deg, #fffdfa 0%, #fff5ed 100%);
+      padding: 20px;
+      min-height: 170px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+    .kpi-empty-value{
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--utOrangeDark);
+      margin-bottom: 6px;
+    }
+
+    .toolbar{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      margin-bottom: 12px;
+    }
+    .searchbox{ max-width: 340px; width: 100%; }
+
+    .form-control, .form-select{
+      border-radius: 12px;
+      border-color: rgba(15, 23, 42, .10);
+      box-shadow: none !important;
+    }
+    .form-control:focus, .form-select:focus{
+      border-color: rgba(243,112,33,.45);
+      box-shadow: 0 0 0 .2rem rgba(243,112,33,.12) !important;
+    }
+
+    .table{ --bs-table-bg: transparent; margin-bottom: 0; }
+    .table thead th{
+      background: var(--tableHead);
+      color: #7a2f07;
+      border-bottom: 1px solid rgba(243,112,33,.12);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .table tbody tr:nth-child(even){ background: var(--tableStripe); }
+    .table tbody tr:hover{ background: #fff2e6; }
+    .table td, .table th{ padding-top: .8rem; padding-bottom: .8rem; }
+
+    .status-dot{
+      width: 10px; height: 10px; border-radius: 999px; display:inline-block; margin-right: 6px;
+      background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.12);
+    }
+
+    @media(max-width: 991px){
+      .sidebar{ width: 100%; min-height: auto; position: static; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; }
+      .content{ margin-left: 0; padding-top: 14px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sidebar py-3">
+  <div class="brand brand-stack">
+    <div class="brand-top">
+      <img src="logo ut.png" alt="Logo UT" class="brand-logo-ut">
+      <div class="brand-corp-text">
+        <div class="brand-corp-title">UNITED TRACTORS</div>
+        <div class="brand-corp-sub">member of ASTRA</div>
+      </div>
+    </div>
+
+    <div class="brand-bottom">
+      <div class="brand-title">Digital Force</div>
+      <div class="brand-sub">UT-Sangkulirang</div>
+    </div>
+  </div>
+    <hr style="opacity:.15; border-color: rgba(255,255,255,.18)">
+
+    <a href="#overview" data-section="overview" class="nav-link-side active"><i class="bi bi-speedometer2"></i>Overview</a>
+    <a href="#sa" data-section="sa" class="nav-link-side"><i class="bi bi-check2-circle"></i>Rasio SA</a>
+    <a href="#timesheet" data-section="timesheet" class="nav-link-side"><i class="bi bi-clock-history"></i>TimeSheet</a>
+    <a href="#cases" data-section="cases" class="nav-link-side"><i class="bi bi-table"></i>Detail SA</a>
+    <a href="#dq" data-section="dq" class="nav-link-side"><i class="bi bi-shield-check"></i>Data Quality</a>
+
+  </div>
+
+  <main class="content">
+    <div class="topbar mb-3">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-graph-up-arrow" style="font-size:1.1rem;color:var(--utOrange)"></i>
+          <div>
+            <div class="fs-5 fw-bold" id="pageTitle">Overview</div>
+            <div class="small-muted" id="pageSubtitle">Ringkasan Rasio SA dan TimeSheet.</div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <label class="small-muted mb-0">Periode</label>
+          <select class="form-select form-select-sm" id="periodSelect" style="min-width: 140px"></select>
+        </div>
+      </div>
+      <div class="small-muted mt-2">
+        Status: <span class="status-dot"></span><span id="connStatus" class="mono">-</span>
+      </div>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <!-- OVERVIEW -->
+    <section id="sec-overview" class="section active">
+      <div class="summary-grid mb-3">
+        <div class="summary-card">
+          <div class="summary-head">
+            <div>
+              <div class="summary-label">Total Case</div>
+              <div class="summary-value mono" id="ovTotalCase">-</div>
+              <div class="summary-note" id="ovTotalCaseNote">Jumlah case valid.</div>
+            </div>
+            <div class="summary-icon"><i class="bi bi-table"></i></div>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-head">
+            <div>
+              <div class="summary-label">SA Score</div>
+              <div class="summary-value" id="ovSaScore">-</div>
+              <div class="summary-note" id="ovSaScoreNote">Penilaian mengacu ke Akurasi Staging SA.</div>
+            </div>
+            <div class="summary-icon"><i class="bi bi-stars"></i></div>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-head">
+            <div>
+              <div class="summary-label">Timesheet Score</div>
+              <div class="summary-value mono" id="ovTsScore">-</div>
+              <div class="summary-note" id="ovTsScoreNote">Menunggu data leadtime input timesheet &lt; 3 hari.</div>
+            </div>
+            <div class="summary-icon"><i class="bi bi-clock-history"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-xl-6">
+          <div class="card card-kpi h-100">
+            <div class="card-body">
+              <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+                <div>
+                  <div class="fw-bold">Akurasi Staging SA</div>
+                  <div class="small-muted">Top 5 mekanik dengan Not Accurate tertinggi</div>
+                </div>
+                <span class="badge-eval na" id="saOverviewStatus">-</span>
+              </div>
+              <canvas id="saChart" height="120"></canvas>
+              <div class="row g-2 mt-2">
+                <div class="col-6">
+                  <div class="metric-box">
+                    <div class="small-muted">Mekanik Memenuhi</div>
+                    <div class="fs-5 fw-bold mono" id="saMeetCount">-</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="metric-box">
+                    <div class="small-muted">Mekanik Review</div>
+                    <div class="fs-5 fw-bold mono" id="saReviewCount">-</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+          <div class="card card-kpi h-100">
+            <div class="card-body">
+              <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+                <div>
+                  <div class="fw-bold">Timesheet & Productivity</div>
+                  </div>
+                <span class="badge-eval na" id="tsOverviewStatus">-</span>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="metric-box">
+                    <div class="small-muted">Total Available Hours</div>
+                    <div class="fs-5 fw-bold mono" id="tsAvail">-</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="metric-box">
+                    <div class="small-muted">Total Qty SA</div>
+                    <div class="fs-5 fw-bold mono" id="tsQty">-</div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="metric-box">
+                    <div class="small-muted">Avg JE (Job Efficiency)</div>
+                    <div class="fs-5 fw-bold mono" id="tsAvgJe">-</div>
+                    <div class="small-muted">Tip: JE = EFH/ACH</div>
+                  </div>
+                </div>
+              </div>
+
+            <hr class="hr-soft">
+
+            <div class="fw-bold mb-2">Case Terbaru</div>
+            <div class="small-muted mb-2">
+              Menampilkan 5 case pertama pada periode aktif.
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>Case</th>
+                    <th>Mekanik</th>
+                    <th>Area</th>
+                    <th>Accuracy</th>
+                  </tr>
+                </thead>
+                <tbody id="caseMiniBody"></tbody>
+              </table>
+            </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SA -->
+    <section id="sec-sa" class="section">
+      <div class="toolbar">
+        <input id="saSearch" class="form-control form-control-sm searchbox" placeholder="Cari nama mekanik...">
+      </div>
+
+      <div class="card card-kpi">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>Mekanik</th>
+                  <th class="text-end">Accurate</th>
+                  <th class="text-end">Not Accurate</th>
+                  <th class="text-end">Ratio</th>
+                  <th>Bintang</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="saBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TIMESHEET -->
+    <section id="sec-timesheet" class="section">
+      <div class="toolbar">
+        <input id="tsSearch" class="form-control form-control-sm searchbox" placeholder="Cari NRP / nama...">
+      </div>
+
+      <div class="card card-kpi">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>NRP</th>
+                  <th>Mekanik</th>
+                  <th class="text-end">Avail</th>
+                  <th class="text-end">Qty SA</th>
+                  <th class="text-end">ACH</th>
+                  <th class="text-end">TDT</th>
+                  <th class="text-end">EFH</th>
+                  <th class="text-end">JA%</th>
+                  <th class="text-end">JE%</th>
+                  <th>Penilaian Lampiran</th>
+                </tr>
+              </thead>
+              <tbody id="tsBody"></tbody>
+            </table>
+          </div>
+          <div class="small-muted mt-2" id="tsHint"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DETAIL SA -->
+<section id="sec-cases" class="section">
+  <div class="toolbar">
+    <input id="caseSearch" class="form-control form-control-sm searchbox" placeholder="Cari case number / appointment / mekanik / area...">
+    <div class="small-muted" id="caseTableInfo">-</div>
+  </div>
+
+  <div class="card card-kpi">
+    <div class="card-body">
+      <div class="fw-bold mb-1">Detail SA</div>
+      <div class="small-muted mb-3">Data case yang sudah dibersihkan per periode dari view Supabase.</div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Case</th>
+              <th>Appointment</th>
+              <th>Mekanik</th>
+              <th>Area</th>
+              <th>Scheduled Start</th>
+              <th>Submitted</th>
+              <th>Approved</th>
+              <th class="text-center">Accuracy</th>
+            </tr>
+          </thead>
+          <tbody id="caseBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+    <!-- DATA QUALITY -->
+    <section id="sec-dq" class="section">
+      <div class="toolbar">
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="card card-kpi">
+            <div class="card-body">
+              <div class="fw-bold">Total Case Aktif</div>
+              <div class="fs-3 fw-bold mono" id="dq_caseTotal">-</div>
+              <div class="small-muted">jumlah case pada periode yang sedang dipilih</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <div class="card card-kpi">
+            <div class="card-body">
+              <div class="fw-bold">SA Ratio Mismatch</div>
+              <div class="fs-3 fw-bold mono" id="dq_saMismatch">-</div>
+              <div class="small-muted">dari total <span class="mono" id="dq_saTotal">-</span> mekanik (cek ratio vs accurate/(accurate+not))</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="card card-kpi">
+            <div class="card-body">
+              <div class="fw-bold mb-2">Timesheet Consistency</div>
+              <div class="row g-2">
+                <div class="col-12 col-md-4">
+                  <div class="metric-box">
+                    <div class="small-muted">EFH mismatch (ACH - TDT)</div>
+                    <div class="fs-4 fw-bold mono" id="dq_efhMismatch">-</div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="metric-box">
+                    <div class="small-muted">JA mismatch (ACH/Avail)</div>
+                    <div class="fs-4 fw-bold mono" id="dq_jaMismatch">-</div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="metric-box">
+                    <div class="small-muted">JE mismatch (EFH/ACH)</div>
+                    <div class="fs-4 fw-bold mono" id="dq_jeMismatch">-</div>
+                  </div>
+                </div>
+              </div>
+              <div class="small-muted mt-2">Total timesheet rows: <span class="mono" id="dq_tsTotal">-</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    // =========================
+    // Supabase Config (hardcoded)
+    // =========================
+    const SUPABASE_URL = "https://wqgkwbtsfrmpgwxhaybz.supabase.co";
+    const SUPABASE_ANON_KEY ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZ2t3YnRzZnJtcGd3eGhheWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODQ2MzAsImV4cCI6MjA4ODE2MDYzMH0.a4mN97nAiWqHhuhKJGNsmM1qukUdesUCThor-JKmirA";
+    const SPREADSHEET_ID= "13NWbHrHsyNcDaA1xe2OZPkyoNDuPHO6gLG2Pud3e6hA"
+
+    const SA_SHEET_NAME = "Rasio SA";
+    const TS_SHEET_NAME = "TimeSheet";
+
+    const SA_SHEET_GID = "0";
+    const TS_SHEET_GID = "18247828"; // sesuaikan kalau gid aslinya beda
+
+    const SA_RAW_TABLE = "sa_raw";
+    const TS_RAW_TABLE = "timesheet_raw";
+
+    const SHEET_CSV_URL = (gid) =>
+      `https://docs.google.com/spreadsheets/d/13NWbHrHsyNcDaA1xe2OZPkyoNDuPHO6gLG2Pud3e6hA/export?format=csv&gid=${gid}`;
+
+    function setAlert(html, type = "warning") {
+      const box = document.getElementById("alertBox");
+      box.innerHTML = html ? `<div class="alert alert-${type}">${html}</div>` : "";
+    }
+
+    // =========================
+    // Navigation (single page)
+    // =========================
+    const SECTIONS = {
+      overview: { title: "Overview", subtitle: "Ringkasan Rasio SA dan TimeSheet berdasarkan view Supabase yang sudah dibersihkan." },
+      sa: { title: "Rasio SA", subtitle: "Agregasi akurasi staging SA per mekanik." },
+      timesheet: { title: "TimeSheet", subtitle: "Kinerja mekanik dari data JA, JE, ACH, TDT, dan EFH." },
+      cases: { title: "Detail SA", subtitle: "Detail dari sheet Rasio SA." },
+      dq: { title: "Data Quality", subtitle: "Pemeriksaan kelengkapan dan konsistensi data yang sedang dipakai dashboard." }
+    };
+
+    function setActiveSection(key) {
+      const secId = "sec-" + key;
+      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+      const active = document.getElementById(secId);
+      if (active) active.classList.add("active");
+
+      document.querySelectorAll(".sidebar a[data-section]").forEach(a => {
+        a.classList.toggle("active", a.getAttribute("data-section") === key);
+      });
+
+      document.getElementById("pageTitle").textContent = SECTIONS[key]?.title || "Dashboard";
+      document.getElementById("pageSubtitle").textContent = SECTIONS[key]?.subtitle || "";
+    }
+
+    window.addEventListener("hashchange", () => {
+      const key = (location.hash || "#overview").replace("#", "");
+      if (SECTIONS[key]) setActiveSection(key);
+    });
+
+    // =========================
+    // Supabase client + data cache
+    // =========================
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let cache = {
+          periodKey: null,
+          periodDate: null,
+          sa: [],
+          timesheet: [],
+          cases: []
+        };
+
+        let syncState = {
+          loaded: false,
+          syncing: false,
+          saRows: [],
+          tsRows: [],
+          periods: [],
+          lastSyncAt: null
+        };
+
+        const LAMPIRAN_RULES = {
+          sa: { three: 0.90, two: 0.85, one: 0.80, maxStars: 3 },
+          timesheet: { three: 97, two: 95, one: 90, maxStars: 3 }
+        };
+        let saChart = null;
+
+        function formatPct01(val, decimals=1) {
+          const n = Number(val);
+          if (!Number.isFinite(n)) return "-";
+          return (n * 100).toFixed(decimals) + "%";
+        }
+        function formatNum(val, decimals=1) {
+          const n = Number(val);
+          if (!Number.isFinite(n)) return "-";
+          return n.toFixed(decimals);
+        }
+            function formatNumber(val) {
+          const n = Number(val);
+          if (!Number.isFinite(n)) return "-";
+          return new Intl.NumberFormat("id-ID").format(n);
+        }
+
+        function formatPercent(val, decimals = 1) {
+          const n = Number(val);
+          if (!Number.isFinite(n)) return "-";
+          return `${n.toFixed(decimals)}%`;
+        }
+        function starHtml(count, maxStars = 3) {
+          if (!Number.isFinite(Number(count))) return "-";
+          const safeCount = Math.max(0, Math.min(maxStars, Number(count)));
+          return `<span class="star-row">${Array.from({ length: maxStars }, (_, i) => `<i class="bi ${i < safeCount ? "bi-star-fill filled" : "bi-star empty"}"></i>`).join("")}</span>`;
+        }
+        function firstFinite(obj, keys) {
+          for (const key of keys) {
+            const n = Number(obj?.[key]);
+            if (Number.isFinite(n)) return n;
+          }
+          return null;
+        }
+        function normalizePct100(val) {
+          const n = Number(val);
+          if (!Number.isFinite(n)) return null;
+          return n <= 1 ? n * 100 : n;
+        }
+
+    function cleanCell(v) {
+      if (v == null) return null;
+      const s = String(v).trim();
+      return s === "" ? null : s;
+    }
+
+    function toNumber(v) {
+      if (v == null || v === "") return null;
+      const n = Number(String(v).replace(/,/g, "").trim());
+      return Number.isFinite(n) ? n : null;
+    }
+
+function parseDateAny(v) {
+  if (v == null) return null;
+
+  const s = String(v).trim();
+  if (!s) return null;
+
+  // format ISO / database: 2026-03-18 atau 2026-03-18T10:20:00
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // format DD/MM/YYYY atau D/M/YYYY, optional time
+  // contoh:
+  // 01/03/2026 8:06
+  // 3/11/2026 13:16
+  // 18/03/2026
+  let m = s.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?)?$/
+  );
+  if (m) {
+    const [, dd, mm, yyyy, hh = "00", mi = "00", ss = "00"] = m;
+    const d = new Date(
+      Number(yyyy),
+      Number(mm) - 1,
+      Number(dd),
+      Number(hh),
+      Number(mi),
+      Number(ss)
+    );
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // format DD-MM-YYYY atau D-M-YYYY, optional time
+  m = s.match(
+    /^(\d{1,2})-(\d{1,2})-(\d{4})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?)?$/
+  );
+  if (m) {
+    const [, dd, mm, yyyy, hh = "00", mi = "00", ss = "00"] = m;
+    const d = new Date(
+      Number(yyyy),
+      Number(mm) - 1,
+      Number(dd),
+      Number(hh),
+      Number(mi),
+      Number(ss)
+    );
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // fallback terakhir
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function formatDateTimeID(v) {
+  const d = parseDateAny(v);
+  if (!d) return "-";
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+
+  return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
+}
+
+function monthKeyFromValue(v) {
+  const d = parseDateAny(v);
+  if (!d) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+    function parseAccuracyValue(v) {
+      const s = String(v ?? "").trim().toLowerCase();
+      if (["1", "accurate", "yes", "true"].includes(s)) return 1;
+      if (["0", "not accurate", "not_accurate", "false", "no"].includes(s)) return 0;
+      return null;
+    }
+
+    function buildRowHash(obj) {
+      return btoa(
+        unescape(
+          encodeURIComponent(JSON.stringify(obj))
+        )
+      ).slice(0, 120);
+    }
+
+const KNOWN_HEADERS = new Set([
+  "case_number",
+  "sa_number",
+  "actual_dispatched_date",
+  "actual_travel_date",
+  "actual_inprogress_date",
+  "actual_completed_date",
+  "timesheet_submitted",
+  "timesheet_approved",
+  "case_description",
+  "service_area",
+  "mechanic_name",
+  "scheduled_start",
+  "sa_accuracy",
+
+  "month",
+  "nrp",
+  "available_hours",
+  "qty_sa",
+  "ach",
+  "tdt",
+  "efh",
+  "ja",
+  "je",
+  "ut_partner",
+  "date",
+  "service_resource"
+]);
+
+function normalizeHeaderName(header) {
+  const raw = String(header ?? "")
+    .normalize("NFKC")
+    .replace(/\u00A0/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s/]/g, "")
+    .replace(/\s+/g, "_")
+    .replace(/\//g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  const aliasMap = {
+    case_number: "case_number",
+    sa_number: "sa_number",
+
+    actual_dispatched_date: "actual_dispatched_date",
+    actual_travel_date: "actual_travel_date",
+    actual_inprogress_date: "actual_inprogress_date",
+    actual_completed_date: "actual_completed_date",
+
+    timesheet_submitted: "timesheet_submitted",
+    time_sheet_submitted: "timesheet_submitted",
+    timesheet_approved: "timesheet_approved",
+    time_sheet_approved: "timesheet_approved",
+
+    case_description: "case_description",
+    service_area: "service_area",
+    mechanic_name: "mechanic_name",
+    scheduled_start: "scheduled_start",
+    sa_accuracy: "sa_accuracy",
+
+    month: "month",
+    nrp: "nrp",
+    available_hour: "available_hours",
+    available_hours: "available_hours",
+    qty_sa: "qty_sa",
+    ach: "ach",
+    tdt: "tdt",
+    efh: "efh",
+    ja: "ja",
+    je: "je",
+    ut_partner: "ut_partner",
+    date: "date",
+    service_resource: "service_resource"
+  };
+
+  return aliasMap[raw] || raw;
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        cell += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (ch === "," && !inQuotes) {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+
+    if ((ch === "\n" || ch === "\r") && !inQuotes) {
+      if (ch === "\r" && next === "\n") i++;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+
+    cell += ch;
+  }
+
+  if (cell.length || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+async function fetchSheetRows(sheetName, gid) {
+  const url = SHEET_CSV_URL(gid);
+  const res = await fetch(url, { cache: "no-store" });
+
+  if (!res.ok) {
+    throw new Error(`Sheet "${sheetName}" gagal dibaca. HTTP ${res.status}`);
+  }
+
+  const text = await res.text();
+  const rows = parseCsv(text);
+
+  if (!rows.length) return [];
+
+  const headers = rows[0].map(normalizeHeaderName);
+  const dataRows = rows
+    .slice(1)
+    .filter(r => r.some(cell => String(cell ?? "").trim() !== ""));
+
+  const mapped = dataRows.map(r => {
+    const obj = {};
+    headers.forEach((header, i) => {
+      obj[header] = String(r[i] ?? "").trim();
+    });
+    return obj;
+  });
+
+  console.log(`DEBUG ${sheetName} headers:`, headers);
+  console.log(`DEBUG ${sheetName} first row:`, mapped[0]);
+
+  return mapped;
+}
+
+    function mapSaRowForDb(r) {
+      const row = {
+        case_number: cleanCell(r.case_number),
+        sa_number: cleanCell(r.sa_number),
+        actual_dispatched_date: cleanCell(r.actual_dispatched_date),
+        actual_travel_date: cleanCell(r.actual_travel_date),
+        actual_inprogress_date: cleanCell(r.actual_inprogress_date),
+        actual_completed_date: cleanCell(r.actual_completed_date),
+        timesheet_submitted: cleanCell(r.timesheet_submitted),
+        timesheet_approved: cleanCell(r.timesheet_approved),
+        case_description: cleanCell(r.case_description),
+        service_area: cleanCell(r.service_area),
+        mechanic_name: cleanCell(r.mechanic_name),
+        scheduled_start: cleanCell(r.scheduled_start),
+        sa_accuracy: cleanCell(r.sa_accuracy),
+        source_sheet: SA_SHEET_NAME
+      };
+
+      row.source_row_hash = buildRowHash(row);
+      return row;
+    }
+
+    function mapTimesheetRowForDb(r) {
+      const row = {
+        month: cleanCell(r.month),
+        nrp: cleanCell(r.nrp),
+        mechanic_name: cleanCell(r.mechanic_name),
+        available_hours: cleanCell(r.available_hours),
+        qty_sa: cleanCell(r.qty_sa),
+        ach: cleanCell(r.ach),
+        tdt: cleanCell(r.tdt),
+        efh: cleanCell(r.efh),
+        ja: cleanCell(r.ja),
+        je: cleanCell(r.je),
+        ut_partner: cleanCell(r.ut_partner),
+        date: cleanCell(r.date),
+        service_resource: cleanCell(r.service_resource),
+        source_sheet: TS_SHEET_NAME
+      };
+
+      row.source_row_hash = buildRowHash(row);
+      return row;
+    }
+
+function monthKeyFromMonthLabel(v) {
+  const s = String(v ?? "").trim().toLowerCase();
+  if (!s) return null;
+
+  if (/^\d{4}-\d{2}$/.test(s)) return s;
+
+  const monthMap = {
+    january: 1, januari: 1,
+    february: 2, februari: 2,
+    march: 3, maret: 3,
+    april: 4,
+    may: 5, mei: 5,
+    june: 6, juni: 6,
+    july: 7, juli: 7,
+    august: 8, agustus: 8,
+    september: 9,
+    october: 10, oktober: 10,
+    november: 11,
+    december: 12, desember: 12
+  };
+
+  const m = s.match(/^([a-zA-Z]+)\s+(\d{4})$/);
+  if (!m) return null;
+
+  const monthNum = monthMap[m[1]];
+  const year = Number(m[2]);
+
+  if (!monthNum || !year) return null;
+  return `${year}-${String(monthNum).padStart(2, "0")}`;
+}
+
+async function replaceRowsBySource(tableName, rows, sourceSheet) {
+  const { error: deleteError } = await supabase
+    .from(tableName)
+    .delete()
+    .eq("source_sheet", sourceSheet);
+
+  if (deleteError) throw deleteError;
+
+  if (!rows.length) return;
+
+  const chunkSize = 500;
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+
+    const { error: insertError } = await supabase
+      .from(tableName)
+      .insert(chunk);
+
+    if (insertError) throw insertError;
+  }
+}
+
+    function getSaPeriodKey(r) {
+      return (
+        monthKeyFromValue(r.actual_completed_date) ||
+        monthKeyFromValue(r.scheduled_start) ||
+        monthKeyFromValue(r.actual_dispatched_date)
+      );
+    }
+
+    function getTsPeriodKey(r) {
+      return (
+        monthKeyFromMonthLabel(r.month) ||
+        monthKeyFromValue(r.date)
+      );
+    }
+
+    function buildPeriods(saRows, tsRows) {
+      const set = new Set();
+
+      saRows.forEach(r => {
+        const key = getSaPeriodKey(r);
+        if (key) set.add(key);
+      });
+
+      tsRows.forEach(r => {
+        const key = getTsPeriodKey(r);
+        if (key) set.add(key);
+      });
+
+      return [...set]
+        .sort((a, b) => b.localeCompare(a))
+        .map(key => ({
+          period_key: key,
+          period_label: new Date(`${key}-01`).toLocaleDateString("id-ID", {
+            month: "long",
+            year: "numeric"
+          }),
+          period_month: `${key}-01`
+        }));
+    }
+
+    function buildSaAggregate(saRows, periodKey) {
+      const filtered = saRows.filter(r => getSaPeriodKey(r) === periodKey);
+      const map = new Map();
+
+      filtered.forEach(r => {
+        const mechanic = cleanCell(r.mechanic_name) || "-";
+        if (!map.has(mechanic)) {
+          map.set(mechanic, {
+            mechanic_name: mechanic,
+            accurate_case: 0,
+            not_accurate_case: 0,
+            ratio_pct: null
+          });
+        }
+
+        const item = map.get(mechanic);
+        const acc = parseAccuracyValue(r.sa_accuracy);
+
+        if (acc === 1) item.accurate_case += 1;
+        if (acc === 0) item.not_accurate_case += 1;
+      });
+
+      return [...map.values()]
+        .map(item => {
+          const total = item.accurate_case + item.not_accurate_case;
+          return {
+            ...item,
+            ratio_pct: total ? (item.accurate_case / total) * 100 : null
+          };
+        })
+        .sort((a, b) => (Number(b.not_accurate_case) || 0) - (Number(a.not_accurate_case) || 0));
+    }
+
+    function diffDays(fromVal, toVal) {
+  const from = parseDateAny(fromVal);
+  const to = parseDateAny(toVal);
+  if (!from || !to) return null;
+
+  const ms = to.getTime() - from.getTime();
+  return ms / (1000 * 60 * 60 * 24);
+}
+
+function getTimesheetLeadStats(cases) {
+  const evaluable = [];
+  let ontime = 0;
+
+  for (const r of cases) {
+    const lead = diffDays(r.actual_completed_at, r.time_sheet_submitted_at);
+    if (!Number.isFinite(lead)) continue;
+
+    evaluable.push({ ...r, lead_days: lead });
+    if (lead < 3) ontime++;
+  }
+
+  const pct = evaluable.length ? (ontime / evaluable.length) * 100 : null;
+
+  return {
+    total: evaluable.length,
+    ontime,
+    pct
+  };
+}
+
+function getTimesheetOverviewEval(pct) {
+  if (!Number.isFinite(pct)) {
+    return { kind: "na", label: "-", stars: null, status: "Belum dapat dinilai" };
+  }
+  if (pct >= 97) return { kind: "ok", label: "3 Bintang", stars: 3, status: "Memenuhi" };
+  if (pct >= 95) return { kind: "warn", label: "2 Bintang", stars: 2, status: "Mendekati" };
+  if (pct >= 90) return { kind: "warn", label: "1 Bintang", stars: 1, status: "Toleransi" };
+  return { kind: "danger", label: "0 Bintang", stars: 0, status: "Belum memenuhi" };
+}
+
+    function buildTimesheetRows(tsRows, periodKey) {
+      return tsRows
+        .filter(r => getTsPeriodKey(r) === periodKey)
+          .map(r => ({
+            nrp: cleanCell(r.nrp),
+            mechanic_name: cleanCell(r.mechanic_name) || cleanCell(r.service_resource) || "-",
+            available_hour: toNumber(r.available_hours),
+            sa_count: toNumber(r.qty_sa),
+            ach: toNumber(r.ach),
+            tdt: toNumber(r.tdt),
+            efh: toNumber(r.efh),
+            ja: toNumber(r.ja),
+            je: toNumber(r.je)
+          }))
+        .sort((a, b) => String(a.mechanic_name || "").localeCompare(String(b.mechanic_name || "")));
+    }
+
+    function buildCaseRows(saRows, periodKey) {
+      return saRows
+        .filter(r => getSaPeriodKey(r) === periodKey)
+        .map(r => ({
+          case_number: cleanCell(r.case_number),
+          appointment_number: cleanCell(r.sa_number),
+          mechanic_name: cleanCell(r.mechanic_name),
+          service_area: cleanCell(r.service_area),
+          scheduled_start_at: cleanCell(r.scheduled_start),
+          actual_completed_at: cleanCell(r.actual_completed_date),
+          time_sheet_submitted_at: cleanCell(r.timesheet_submitted),
+          time_sheet_approved_at: cleanCell(r.timesheet_approved),
+          sa_staging_accuracy: parseAccuracyValue(r.sa_accuracy)
+        }))
+        .sort((a, b) => String(a.scheduled_start_at || "").localeCompare(String(b.scheduled_start_at || "")));
+    }
+
+    async function ensureSheetSynced(force = false) {
+      if (syncState.syncing) return;
+      if (syncState.loaded && !force) return;
+
+      syncState.syncing = true;
+      try {
+        const [saRows, tsRows] = await Promise.all([
+          fetchSheetRows(SA_SHEET_NAME, SA_SHEET_GID),
+          fetchSheetRows(TS_SHEET_NAME, TS_SHEET_GID)
+        ]);
+        console.log("DEBUG SA first row canonical:", saRows[0]);
+        console.log("DEBUG TS first row canonical:", tsRows[0]);
+        console.log("DEBUG periods preview:", buildPeriods(saRows, tsRows));
+
+        const saDbRows = saRows.map(mapSaRowForDb);
+        const tsDbRows = tsRows.map(mapTimesheetRowForDb);
+
+        await replaceRowsBySource(
+          SA_RAW_TABLE,
+          saDbRows,
+          SA_SHEET_NAME
+        );
+
+        await replaceRowsBySource(
+          TS_RAW_TABLE,
+          tsDbRows,
+          TS_SHEET_NAME
+        );
+
+        syncState.saRows = saRows;
+        syncState.tsRows = tsRows;
+        syncState.periods = buildPeriods(saRows, tsRows);
+        syncState.lastSyncAt = new Date().toISOString();
+        syncState.loaded = true;
+      } finally {
+        syncState.syncing = false;
+      }
+    }
+
+    async function fetchPeriods() {
+      await ensureSheetSynced();
+      return syncState.periods || [];
+    }
+
+    async function fetchPeriodData(periodKey) {
+      await ensureSheetSynced();
+
+      cache.periodKey = periodKey;
+      cache.periodDate = `${periodKey}-01`;
+      cache.sa = buildSaAggregate(syncState.saRows, periodKey);
+      cache.timesheet = buildTimesheetRows(syncState.tsRows, periodKey);
+      cache.cases = buildCaseRows(syncState.saRows, periodKey);
+    }
+
+    // =========================
+    // Renderers
+    // =========================
+    function badgeEval(kind, label) {
+      return `<span class="badge-eval ${kind}">${label}</span>`;
+    }
+
+    function setBadgeElement(id, kind, label) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = `badge-eval ${kind}`;
+      el.textContent = label;
+    }
+
+    function getSaEval(r) {
+      const ratio = Number(r?.ratio);
+      if (!Number.isFinite(ratio)) return { kind: "na", label: "-", stars: null, status: "-" };
+      if (ratio >= LAMPIRAN_RULES.sa.three) return { kind: "ok", label: "3 Bintang", stars: 3, status: "Memenuhi" };
+      if (ratio >= LAMPIRAN_RULES.sa.two) return { kind: "warn", label: "2 Bintang", stars: 2, status: "Mendekati" };
+      if (ratio >= LAMPIRAN_RULES.sa.one) return { kind: "warn", label: "1 Bintang", stars: 1, status: "Toleransi" };
+      return { kind: "danger", label: "0 Bintang", stars: 0, status: "Belum memenuhi" };
+    }
+
+    function getTimesheetLeadPct(r) {
+      return normalizePct100(firstFinite(r, ["leadtime_pct", "leadtime_timesheet_pct", "lt_timesheet_pct", "input_leadtime_pct", "ontime_input_pct"]));
+    }
+
+    function getTimesheetEval(r) {
+      const pct = getTimesheetLeadPct(r);
+      if (!Number.isFinite(pct)) return { kind: "na", label: "-", stars: null, status: "Belum dapat dinilai" };
+      if (pct >= LAMPIRAN_RULES.timesheet.three) return { kind: "ok", label: "3 Bintang", stars: 3, status: "Memenuhi" };
+      if (pct >= LAMPIRAN_RULES.timesheet.two) return { kind: "warn", label: "2 Bintang", stars: 2, status: "Mendekati" };
+      if (pct >= LAMPIRAN_RULES.timesheet.one) return { kind: "warn", label: "1 Bintang", stars: 1, status: "Toleransi" };
+      return { kind: "danger", label: "0 Bintang", stars: 0, status: "Belum memenuhi" };
+    }
+
+    function renderOverview() {
+      const sa = cache.sa || [];
+      const ts = cache.timesheet || [];
+      const cases = cache.cases || [];
+
+      const periodBadge = document.getElementById("periodBadge");
+      if (periodBadge) periodBadge.textContent = `Period ${cache.periodKey || "-"}`;
+
+      const saValid = sa.filter(x => Number.isFinite(Number(x.ratio_pct)));
+      const saAvg = saValid.length
+        ? saValid.reduce((a, x) => a + Number(x.ratio_pct || 0), 0) / saValid.length
+        : null;
+
+      const saAvgEval = saAvg == null
+        ? { kind: "na", stars: null, label: "-", status: "Belum cukup data" }
+        : getSaEval({ ratio: saAvg / 100 });
+
+      const saMeet = sa.filter(x => Number(x.ratio_pct) >= 90).length;
+      const saBelow = sa.filter(x => Number.isFinite(Number(x.ratio_pct)) && Number(x.ratio_pct) < 90).length;
+
+      const tsLead = getTimesheetLeadStats(cases);
+      const tsEval = getTimesheetOverviewEval(tsLead.pct);
+
+      document.getElementById("ovTsScore").innerHTML =
+        tsEval.stars === null ? "-" : starHtml(tsEval.stars, 3);
+
+      document.getElementById("ovTsScoreNote").textContent =
+        tsLead.pct == null
+          ? "Belum cukup data leadtime input timesheet."
+          : `${tsLead.ontime}/${tsLead.total} case memiliki leadtime input timesheet < 3 hari (${formatPercent(tsLead.pct, 1)}).`;
+
+      setBadgeElement(
+        "tsOverviewStatus",
+        tsEval.kind,
+        tsEval.stars === null ? "-" : tsEval.label
+      );
+
+      const top = [...sa]
+        .sort((a, b) => (Number(b.not_accurate_case) || 0) - (Number(a.not_accurate_case) || 0))
+        .slice(0, 5);
+
+      const labels = top.map(x => x.mechanic_name || "-");
+      const values = top.map(x => Number(x.not_accurate_case) || 0);
+
+      const ctx = document.getElementById("saChart");
+      if (saChart) {
+        saChart.destroy();
+        saChart = null;
+      }
+
+      if (ctx) {
+        saChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{
+              label: "Not Accurate (cases)",
+              data: values,
+              backgroundColor: "rgba(243, 112, 33, 0.65)",
+              borderColor: "rgba(207, 79, 9, 1)",
+              borderWidth: 1,
+              borderRadius: 10,
+              maxBarThickness: 44
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, grid: { color: "rgba(15, 23, 42, 0.08)" } },
+              x: { grid: { display: false } }
+            }
+          }
+        });
+      }
+
+      const totalAvail = ts.reduce((a, x) => a + (Number(x.available_hour) || 0), 0);
+      const totalQty = ts.reduce((a, x) => a + (Number(x.sa_count) || 0), 0);
+      const avgJe = ts.length
+        ? ts.reduce((a, x) => a + (Number(x.je) || 0), 0) / ts.length
+        : null;
+
+      document.getElementById("tsAvail").textContent = formatNum(totalAvail, 1);
+      document.getElementById("tsQty").textContent = formatNumber(totalQty);
+      document.getElementById("tsAvgJe").textContent = avgJe == null ? "-" : formatPercent(avgJe, 2);
+      document.getElementById("ovTotalCase").textContent = formatNumber(cases.length);
+      document.getElementById("ovTotalCaseNote").textContent =
+        cases.length ? `${formatNumber(cases.length)} case valid pada periode aktif.` : "Belum ada case valid pada periode ini.";
+
+      const caseInfo = document.getElementById("caseTableInfo");
+      if (caseInfo) caseInfo.textContent = `${formatNumber(cases.length)} case ditampilkan`;
+
+      const mini = cases.slice(0, 5).map(r => `
+        <tr>
+          <td class="mono">${r.case_number || "-"}</td>
+          <td>${r.mechanic_name || "-"}</td>
+          <td>${r.service_area || "-"}</td>
+          <td>${
+            Number(r.sa_staging_accuracy) === 1
+              ? `<span class="badge bg-success">Accurate</span>`
+              : Number(r.sa_staging_accuracy) === 0
+                ? `<span class="badge bg-warning text-dark">Not Accurate</span>`
+                : "-"
+          }</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("caseMiniBody").innerHTML =
+        mini || `<tr><td colspan="4" class="small-muted">Tidak ada data yang sesuai.</td></tr>`;
+    }
+
+    function renderSaTable(filter = "") {
+      const q = filter.trim().toLowerCase();
+
+      const rows = [...(cache.sa || [])]
+        .filter(r => !q || String(r.mechanic_name || "").toLowerCase().includes(q))
+        .sort((a, b) => (Number(b.not_accurate_case) || 0) - (Number(a.not_accurate_case) || 0))
+        .map(r => {
+          const ratio01 = Number(r.ratio_pct) / 100;
+          const evalRes = getSaEval({ ratio: ratio01 });
+
+          return `
+            <tr>
+              <td>${r.mechanic_name || "-"}</td>
+              <td class="text-end mono">${r.accurate_case ?? 0}</td>
+              <td class="text-end mono">${r.not_accurate_case ?? 0}${(r.not_accurate_case ?? 0) > 0 ? `<span class="badge bg-warning text-dark ms-2">cek</span>` : ""}</td>
+              <td class="text-end mono">${formatPercent(Number(r.ratio_pct) || 0, 1)}</td>
+              <td>${evalRes.stars === null ? "-" : starHtml(evalRes.stars, 3)}</td>
+              <td>${badgeEval(evalRes.kind, evalRes.status)}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      document.getElementById("saBody").innerHTML =
+        rows || `<tr><td colspan="6" class="small-muted">Tidak ada data yang sesuai.</td></tr>`;
+    }
+
+    function renderTimesheetTable(filter = "") {
+      const q = filter.trim().toLowerCase();
+
+      const rows = [...(cache.timesheet || [])]
+        .filter(r => {
+          if (!q) return true;
+          const a = String(r.nrp || "").toLowerCase();
+          const b = String(r.mechanic_name || "").toLowerCase();
+          return a.includes(q) || b.includes(q);
+        })
+        .sort((a, b) => (Number(a.je) || 999999) - (Number(b.je) || 999999))
+        .map(r => {
+          return `
+            <tr>
+              <td class="mono">${r.nrp || "-"}</td>
+              <td>${r.mechanic_name || "-"}</td>
+              <td class="text-end mono">${r.available_hour ?? "-"}</td>
+              <td class="text-end mono">${r.sa_count ?? "-"}</td>
+              <td class="text-end mono">${r.ach ?? "-"}</td>
+              <td class="text-end mono">${r.tdt ?? "-"}</td>
+              <td class="text-end mono">${r.efh ?? "-"}</td>
+              <td class="text-end mono">${r.ja ?? "-"}</td>
+              <td class="text-end mono">${r.je ?? "-"}</td>
+              <td>${badgeEval("ok", "Terbaca")}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      document.getElementById("tsBody").innerHTML =
+        rows || `<tr><td colspan="10" class="small-muted">Tidak ada data yang sesuai.</td></tr>`;
+
+      document.getElementById("tsHint").innerHTML =
+        `Rumus umum: <span class="mono">EFH = ACH - TDT</span> • <span class="mono">JA = ACH/Available × 100%</span> • <span class="mono">JE = EFH/ACH × 100%</span>`;
+    }
+
+    function renderCaseTable(filter = "") {
+      const q = filter.trim().toLowerCase();
+
+      const rows = [...(cache.cases || [])]
+        .filter(r => {
+          if (!q) return true;
+          return [
+            r.case_number,
+            r.appointment_number,
+            r.mechanic_name,
+            r.service_area
+          ].some(v => String(v || "").toLowerCase().includes(q));
+        })
+        .map(r => `
+          <tr>
+            <td class="mono">${r.case_number || "-"}</td>
+            <td class="mono">${r.appointment_number || "-"}</td>
+            <td>${r.mechanic_name || "-"}</td>
+            <td>${r.service_area || "-"}</td>
+            <td class="mono">${formatDateTimeID(r.scheduled_start_at)}</td>
+            <td class="mono">${formatDateTimeID(r.time_sheet_submitted_at)}</td>
+            <td class="mono">${formatDateTimeID(r.time_sheet_approved_at)}</td>
+            <td class="text-center">
+              ${Number(r.sa_staging_accuracy) === 1
+                ? `<span class="badge bg-success">Accurate</span>`
+                : Number(r.sa_staging_accuracy) === 0
+                  ? `<span class="badge bg-warning text-dark">Not Accurate</span>`
+                  : `-`}
+            </td>
+          </tr>
+        `)
+        .join("");
+
+      document.getElementById("caseBody").innerHTML =
+        rows || `<tr><td colspan="8" class="small-muted">Tidak ada data yang sesuai.</td></tr>`;
+
+      const caseInfo = document.getElementById("caseTableInfo");
+      if (caseInfo) caseInfo.textContent = `${formatNumber((cache.cases || []).length)} case tersedia`;
+    }
+
+    function renderDQ() {
+      const sa = cache.sa || [];
+      const ts = cache.timesheet || [];
+      const cases = cache.cases || [];
+
+      let saMismatch = 0;
+      for (const r of sa) {
+        const a = Number(r.accurate_case) || 0;
+        const n = Number(r.not_accurate_case) || 0;
+        const denom = a + n;
+        const ratioPct = Number(r.ratio_pct);
+
+        if (!denom || !Number.isFinite(ratioPct)) continue;
+
+        const calcPct = (a / denom) * 100;
+        if (Math.abs(calcPct - ratioPct) > 0.2) saMismatch++;
+      }
+
+      let efhM = 0, jaM = 0, jeM = 0;
+      for (const r of ts) {
+        const ach = Number(r.ach);
+        const tdt = Number(r.tdt);
+        const efh = Number(r.efh);
+        const av = Number(r.available_hour);
+        const ja = Number(r.ja);
+        const je = Number(r.je);
+
+        if (Number.isFinite(ach) && Number.isFinite(tdt) && Number.isFinite(efh)) {
+          if (Math.abs((ach - tdt) - efh) > 0.5) efhM++;
+        }
+
+        if (Number.isFinite(av) && av !== 0 && Number.isFinite(ach) && Number.isFinite(ja)) {
+          const calc = (ach / av) * 100;
+          if (Math.abs(calc - ja) > 2) jaM++;
+        }
+
+        if (Number.isFinite(ach) && ach !== 0 && Number.isFinite(efh) && Number.isFinite(je)) {
+          const calc = (efh / ach) * 100;
+          if (Math.abs(calc - je) > 2) jeM++;
+        }
+      }
+
+      if (document.getElementById("dq_caseTotal")) {
+        document.getElementById("dq_caseTotal").textContent = String(cases.length);
+      }
+
+      document.getElementById("dq_saMismatch").textContent = String(saMismatch);
+      document.getElementById("dq_saTotal").textContent = String(sa.length);
+
+      document.getElementById("dq_efhMismatch").textContent = String(efhM);
+      document.getElementById("dq_jaMismatch").textContent = String(jaM);
+      document.getElementById("dq_jeMismatch").textContent = String(jeM);
+      document.getElementById("dq_tsTotal").textContent = String(ts.length);
+    }
+
+    function wireSearch() {
+      document.getElementById("saSearch")?.addEventListener("input", (e) => renderSaTable(e.target.value));
+      document.getElementById("tsSearch")?.addEventListener("input", (e) => renderTimesheetTable(e.target.value));
+      document.getElementById("caseSearch")?.addEventListener("input", (e) => renderCaseTable(e.target.value));
+    }
+
+    async function loadAndRender(periodKey) {
+      setAlert(`Loading data period <b>${periodKey}</b>...`, "info");
+      try {
+        await fetchPeriodData(periodKey);
+        renderOverview();
+        renderSaTable(document.getElementById("saSearch")?.value || "");
+        renderTimesheetTable(document.getElementById("tsSearch")?.value || "");
+        renderCaseTable(document.getElementById("caseSearch")?.value || "");
+        renderDQ();
+        setAlert("", "info");
+      } catch (e) {
+        setAlert(e.message || String(e), "danger");
+      }
+    }
+
+    // nav click highlight
+    document.querySelectorAll(".sidebar a[data-section]").forEach(a => {
+      a.addEventListener("click", () => {
+        const key = a.getAttribute("data-section");
+        if (key) setTimeout(() => setActiveSection(key), 0);
+      });
+    });
+
+    async function boot() {
+      document.getElementById("connStatus").textContent = "syncing sheet...";
+      wireSearch();
+
+      try {
+        const periods = await fetchPeriods();
+        document.getElementById("connStatus").textContent = "sheet + supabase connected";
+
+        if (!periods.length) {
+          setAlert("Belum ada periode yang terbaca dari spreadsheet.", "warning");
+          document.getElementById("periodSelect").innerHTML = "";
+          return;
+        }
+
+        const select = document.getElementById("periodSelect");
+        const urlPeriod = new URLSearchParams(location.search).get("period");
+        const keys = periods.map(p => p.period_key);
+        const current = urlPeriod && keys.includes(urlPeriod) ? urlPeriod : periods[0].period_key;
+
+        select.innerHTML = periods
+          .map(p => `<option value="${p.period_key}" ${p.period_key === current ? "selected" : ""}>${p.period_label || p.period_key}</option>`)
+          .join("");
+
+        select.onchange = async () => {
+          const p = select.value;
+          const url = new URL(location.href);
+          url.searchParams.set("period", p);
+          history.replaceState({}, "", url.toString());
+          await loadAndRender(p);
+        };
+
+        await loadAndRender(current);
+
+        const key = (location.hash || "#overview").replace("#", "");
+        setActiveSection(SECTIONS[key] ? key : "overview");
+      } catch (e) {
+        document.getElementById("connStatus").textContent = "failed";
+        setAlert(
+          `Gagal baca spreadsheet / simpan ke Supabase: <b>${e?.message || e}</b><br><br>Pastikan nama sheet benar, spreadsheet bisa diakses, dan policy insert/update untuk tabel public sudah aktif.`,
+          "danger"
+        );
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>
