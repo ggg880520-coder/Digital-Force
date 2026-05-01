@@ -30,112 +30,221 @@
     }
     html, body { height: 100%; }
     body {
-      background: var(--bg);
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: var(--textMain);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(3, 18, 32, 0.82) 0%,
+      rgba(3, 18, 32, 0.60) 42%,
+      rgba(3, 18, 32, 0.25) 100%
+    ),
+    url("./Background.png") center center / cover fixed no-repeat;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--textMain);
+}
+
+        .app-header{
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #ffffff;
+      box-shadow: 0 10px 28px rgba(0,0,0,.18);
     }
 
-    .sidebar{
-      width: 250px; min-height: 100vh; position: fixed; left: 0; top: 0;
-      background: var(--sidebar); color: #fff;
-      box-shadow: 12px 0 28px rgba(0,0,0,.18);
-    }
-    .brand{
-      padding: 20px 16px 18px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
+    .header-top{
+      min-height: 130px;
+      padding: 18px 58px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      background: #ffffff;
     }
 
-    .brand-stack{
+    .header-left{
       display: flex;
       flex-direction: column;
+      align-items: flex-start;
       gap: 12px;
     }
 
-    .brand-top{
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .brand-logo-ut{
-      width: 44px;
-      height: 44px;
+    .header-logo-main{
+      width: 330px;
+      max-width: 42vw;
+      height: auto;
       object-fit: contain;
       display: block;
-      border-radius: 8px;
-      background: #fff;
-      padding: 2px;
     }
 
-    .brand-corp-text{
+    .header-title{
+      color: #000000;
+      font-size: .92rem;
+      font-weight: 900;
+      letter-spacing: 2.2px;
+      line-height: 1.1;
+    }
+
+    .header-right{
       display: flex;
-      flex-direction: column;
-      line-height: 1.05;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 30px;
+      min-width: 280px;
     }
 
-    .brand-corp-title{
-      font-size: 0.95rem;
-      font-weight: 800;
-      letter-spacing: 0.3px;
-      color: #ffffff;
+    .header-logo-small{
+      height: 78px;
+      width: auto;
+      object-fit: contain;
+      display: block;
     }
 
-    .brand-corp-sub{
-      font-size: 0.78rem;
-      color: #7db7ff;
-      font-weight: 500;
-      margin-top: 2px;
+    .header-logo-wide{
+      height: 54px;
+      width: auto;
+      object-fit: contain;
+      display: block;
     }
 
-    .brand-bottom{
+    .main-nav{
+      min-height: 72px;
       display: flex;
-      flex-direction: column;
-      gap: 2px;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 58px;
+      background: #101010;
+      border-bottom: 5px solid #ffd100;
+      box-shadow: inset 0 -1px 0 rgba(255,255,255,.08);
     }
 
-    .brand-title{
-      font-size: 1.00rem;
-      font-weight: 800;
+    .main-nav a{
       color: #ffffff;
-      line-height: 1.15;
-    }
-
-    .brand-sub{
-      font-size: 0.75rem;
-      color: rgba(255,255,255,.72);
-      line-height: 1.2;
-    }
-
-    .sidebar a{
-      color: var(--sidebarText);
-      text-decoration:none;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      margin: 6px 10px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: .95rem;
+      letter-spacing: .3px;
+      transition: all .18s ease;
       border: 1px solid transparent;
-      transition: all .2s ease;
+      white-space: nowrap;
     }
-    .sidebar a:hover{
-      background: rgba(255,255,255,.08);
-      color: #fff;
-      transform: translateX(2px);
-    }
-    .sidebar a.active{
-      background: var(--sidebarActive);
-      color: #fff;
-      border: 1px solid rgba(243,112,33,.22);
-      box-shadow: inset 3px 0 0 var(--utOrange);
-    }
-    .sidebar .nav-icon{ width: 18px; opacity: .95; }
 
-    .content{ margin-left: 270px; padding: 18px 20px 36px; }
+    .main-nav a:hover{
+      color: #ffd100;
+      background: rgba(255,255,255,.08);
+    }
+
+    .main-nav a.active{
+      color: #000000;
+      background: #ffd100;
+      border-color: #ffd100;
+      box-shadow: 0 6px 16px rgba(255,209,0,.25);
+    }
+
+    .nav-spacer{
+      flex: 1 1 auto;
+    }
+
+    .nav-action{
+      min-height: 44px;
+      padding: 9px 24px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: .92rem;
+      letter-spacing: .2px;
+      white-space: nowrap;
+    }
+
+    .nav-action-primary{
+      border: 1px solid #ffd100;
+      background: #ffd100;
+      color: #000000;
+    }
+
+    .nav-action-outline{
+      border: 1px solid #ffd100;
+      background: transparent;
+      color: #ffd100;
+    }
+
+    .nav-status{
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      white-space: nowrap;
+      margin-left: 4px;
+    }
+
+    .content{
+      margin-left: 0;
+      padding: 18px 20px 36px;
+    }
+
+    @media(max-width: 1200px){
+      .header-top{
+        padding: 16px 22px 12px;
+      }
+
+      .main-nav{
+        padding: 10px 22px;
+        overflow-x: auto;
+      }
+
+      .header-logo-main{
+        width: 280px;
+      }
+
+      .header-right{
+        gap: 16px;
+      }
+    }
+
+    @media(max-width: 768px){
+      .header-top{
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .header-logo-main{
+        max-width: 100%;
+        width: 270px;
+      }
+
+      .header-right{
+        justify-content: flex-start;
+        min-width: 0;
+      }
+
+      .header-logo-small{
+        height: 58px;
+      }
+
+      .header-logo-wide{
+        height: 42px;
+      }
+
+      .main-nav{
+        gap: 8px;
+      }
+
+      .main-nav a,
+      .nav-action{
+        padding-left: 16px;
+        padding-right: 16px;
+        font-size: .85rem;
+      }
+    }
 
     .topbar{
-      background: linear-gradient(135deg, #ffffff 0%, #fff7f0 100%);
-      border: 1px solid rgba(243,112,33,.10);
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.24);
       border-radius: 22px;
       box-shadow: var(--cardShadow);
       padding: 16px 18px;
@@ -166,12 +275,13 @@
     }
 
     .card-kpi{
-      border: 1px solid var(--cardBorder);
-      border-radius: 22px;
-      box-shadow: var(--cardShadow);
-      background: rgba(255,255,255,.94);
-      overflow: hidden;
-    }
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 22px;
+  box-shadow: var(--cardShadow);
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
     .card-kpi::before{
       content: "";
       display: block;
@@ -337,39 +447,42 @@
       background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.12);
     }
 
-    @media(max-width: 991px){
-      .sidebar{ width: 100%; min-height: auto; position: static; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; }
-      .content{ margin-left: 0; padding-top: 14px; }
-    }
   </style>
 </head>
 
 <body>
-  <div class="sidebar py-3">
-  <div class="brand brand-stack">
-    <div class="brand-top">
-      <img src="logo ut.png" alt="Logo UT" class="brand-logo-ut">
-      <div class="brand-corp-text">
-        <div class="brand-corp-title">UNITED TRACTORS</div>
-        <div class="brand-corp-sub">member of ASTRA</div>
+    <header class="app-header">
+    <div class="header-top">
+      <div class="header-left">
+        <img src="./Logo.png" alt="United Tractors" class="header-logo-main">
+        <div class="header-title">SANGKULIRANG SERVICE TRACKING ANALYTICS</div>
+      </div>
+
+      <div class="header-right">
+        <img src="./Sangkulirang-Stronger.jpeg" alt="Sangkulirang Stronger" class="header-logo-small">
+        <img src="./Moving As One.png" alt="Moving As One" class="header-logo-wide">
       </div>
     </div>
 
-    <div class="brand-bottom">
-      <div class="brand-title">Digital Force</div>
-      <div class="brand-sub">UT-Sangkulirang</div>
-    </div>
-  </div>
-    <hr style="opacity:.15; border-color: rgba(255,255,255,.18)">
+    <nav class="main-nav">
+      <a href="#overview" data-section="overview" class="nav-link-side active">BERANDA</a>
+      <a href="#live" data-section="live" class="nav-link-side">LIVE SA</a>
+      <a href="#sa" data-section="sa" class="nav-link-side">RASIO SA</a>
+      <a href="#timesheet" data-section="timesheet" class="nav-link-side">TIMESHEET</a>
+      <a href="#cases" data-section="cases" class="nav-link-side">DETAIL SA</a>
+      <a href="#dq" data-section="dq" class="nav-link-side">DATA QUALITY</a>
 
-    <a href="#overview" data-section="overview" class="nav-link-side active"><i class="bi bi-speedometer2"></i>Overview</a>
-    <a href="#live" data-section="live" class="nav-link-side"><i class="bi bi-broadcast-pin"></i>Live SA</a>
-    <a href="#sa" data-section="sa" class="nav-link-side"><i class="bi bi-check2-circle"></i>Rasio SA</a>
-    <a href="#timesheet" data-section="timesheet" class="nav-link-side"><i class="bi bi-clock-history"></i>TimeSheet</a>
-    <a href="#cases" data-section="cases" class="nav-link-side"><i class="bi bi-table"></i>Detail SA</a>
-    <a href="#dq" data-section="dq" class="nav-link-side"><i class="bi bi-shield-check"></i>Data Quality</a>
+      <div class="nav-spacer"></div>
 
-  </div>
+      <button type="button" class="nav-action nav-action-primary">AJUKAN UPDATE</button>
+      <button type="button" class="nav-action nav-action-outline">EXPORT EXCEL</button>
+
+      <div class="nav-status">
+        <span class="status-dot"></span>
+        <span>Update</span>
+      </div>
+    </nav>
+  </header>
 
   <main class="content">
     <div class="topbar mb-3">
@@ -766,7 +879,7 @@ const FAST_UPDATE_LOG_TABLE = "fast_update_log";
       const active = document.getElementById(secId);
       if (active) active.classList.add("active");
 
-      document.querySelectorAll(".sidebar a[data-section]").forEach(a => {
+            document.querySelectorAll(".main-nav a[data-section]").forEach(a => {
         a.classList.toggle("active", a.getAttribute("data-section") === key);
       });
 
@@ -2090,7 +2203,7 @@ renderDQ();
     }
 
     // nav click highlight
-    document.querySelectorAll(".sidebar a[data-section]").forEach(a => {
+        document.querySelectorAll(".main-nav a[data-section]").forEach(a => {
       a.addEventListener("click", () => {
         const key = a.getAttribute("data-section");
         if (key) setTimeout(() => setActiveSection(key), 0);
