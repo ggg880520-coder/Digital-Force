@@ -363,6 +363,7 @@
     <hr style="opacity:.15; border-color: rgba(255,255,255,.18)">
 
     <a href="#overview" data-section="overview" class="nav-link-side active"><i class="bi bi-speedometer2"></i>Overview</a>
+    <a href="#live" data-section="live" class="nav-link-side"><i class="bi bi-broadcast-pin"></i>Live SA</a>
     <a href="#sa" data-section="sa" class="nav-link-side"><i class="bi bi-check2-circle"></i>Rasio SA</a>
     <a href="#timesheet" data-section="timesheet" class="nav-link-side"><i class="bi bi-clock-history"></i>TimeSheet</a>
     <a href="#cases" data-section="cases" class="nav-link-side"><i class="bi bi-table"></i>Detail SA</a>
@@ -518,6 +519,52 @@
         </div>
       </div>
     </section>
+
+    <!-- LIVE SA -->
+<section id="sec-live" class="section">
+  <div class="card card-kpi mb-3">
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+        <div>
+          <div class="fw-bold">Notif Update Terlalu Cepat</div>
+          <div class="small-muted">Muncul otomatis jika mekanik klik status sebelum batas minimum waktu.</div>
+        </div>
+        <span class="badge-eval na" id="fastUpdateCountBadge">0 alert</span>
+      </div>
+
+      <div id="fastUpdateAlertList" class="d-grid gap-2"></div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <input id="liveSearch" class="form-control form-control-sm searchbox" placeholder="Cari SA / NRP / site...">
+  </div>
+
+  <div class="card card-kpi">
+    <div class="card-body">
+      <div class="fw-bold">Live Status SA dari Telegram Bot</div>
+      <div class="small-muted">Data berubah otomatis ketika mekanik update status lewat Telegram.</div>
+
+      <div class="table-responsive mt-3">
+        <table class="table table-sm table-hover align-middle">
+          <thead>
+            <tr>
+              <th>SA</th>
+              <th>NRP</th>
+              <th>Job</th>
+              <th>Site</th>
+              <th>Status</th>
+              <th>Dispatch</th>
+              <th>Travel</th>
+              <th>In Progress</th>
+              <th>Completed</th>
+            </tr>
+          </thead>
+          <tbody id="liveSaBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- SA -->
     <section id="sec-sa" class="section">
@@ -690,6 +737,8 @@
 
     const SA_RAW_TABLE = "sa_raw";
     const TS_RAW_TABLE = "timesheet_raw";
+    const SA_JOBS_TABLE = "sa_jobs";
+const FAST_UPDATE_LOG_TABLE = "fast_update_log";
 
     const SHEET_CSV_URL = (gid) =>
       `https://docs.google.com/spreadsheets/d/13NWbHrHsyNcDaA1xe2OZPkyoNDuPHO6gLG2Pud3e6hA/export?format=csv&gid=${gid}`;
@@ -703,12 +752,13 @@
     // Navigation (single page)
     // =========================
     const SECTIONS = {
-      overview: { title: "Overview", subtitle: "Ringkasan Rasio SA dan TimeSheet berdasarkan view Supabase yang sudah dibersihkan." },
-      sa: { title: "Rasio SA", subtitle: "Agregasi akurasi staging SA per mekanik." },
-      timesheet: { title: "TimeSheet", subtitle: "Kinerja mekanik dari data JA, JE, ACH, TDT, dan EFH." },
-      cases: { title: "Detail SA", subtitle: "Detail dari sheet Rasio SA." },
-      dq: { title: "Data Quality", subtitle: "Pemeriksaan kelengkapan dan konsistensi data yang sedang dipakai dashboard." }
-    };
+  overview: { title: "Overview", subtitle: "Ringkasan Rasio SA dan TimeSheet berdasarkan view Supabase yang sudah dibersihkan." },
+  live: { title: "Live SA", subtitle: "Status SA aktif dari Telegram Bot secara realtime." },
+  sa: { title: "Rasio SA", subtitle: "Agregasi akurasi staging SA per mekanik." },
+  timesheet: { title: "TimeSheet", subtitle: "Kinerja mekanik dari data JA, JE, ACH, TDT, dan EFH." },
+  cases: { title: "Detail SA", subtitle: "Detail dari sheet Rasio SA." },
+  dq: { title: "Data Quality", subtitle: "Pemeriksaan kelengkapan dan konsistensi data yang sedang dipakai dashboard." }
+};
 
     function setActiveSection(key) {
       const secId = "sec-" + key;
@@ -735,12 +785,14 @@
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let cache = {
-          periodKey: null,
-          periodDate: null,
-          sa: [],
-          timesheet: [],
-          cases: []
-        };
+  periodKey: null,
+  periodDate: null,
+  sa: [],
+  timesheet: [],
+  cases: [],
+  liveJobs: [],
+fastUpdates: []
+};
 
         let syncState = {
           loaded: false,
@@ -1055,6 +1107,155 @@ async function fetchSheetRows(sheetName, gid) {
   return mapped;
 }
 
+async function fetchLiveJobs() {
+  const { data, error } = await supabase
+    .from(SA_JOBS_TABLE)
+    .select("*")
+    .neq("status", "POST_ACTIVITY")
+    .order("dispatch_time", { ascending: false });
+
+  if (error) throw error;
+  cache.liveJobs = data || [];
+}
+
+function formatLiveTime(v) {
+  if (!v) return "-";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function renderLiveJobs(filter = "") {
+  const q = String(filter || "").trim().toLowerCase();
+
+  const rows = (cache.liveJobs || [])
+    .filter(r => {
+      if (!q) return true;
+      return [
+        r.sa_id,
+        r.nrp,
+        r.job_type,
+        r.site,
+        r.status
+      ].some(v => String(v || "").toLowerCase().includes(q));
+    })
+    .map(r => `
+      <tr>
+        <td class="mono">${r.sa_id || "-"}</td>
+        <td class="mono">${r.nrp || "-"}</td>
+        <td>${r.job_type || "-"}</td>
+        <td>${r.site || "-"}</td>
+        <td><span class="badge bg-primary">${r.status || "-"}</span></td>
+        <td class="mono">${formatLiveTime(r.dispatch_time)}</td>
+        <td class="mono">${formatLiveTime(r.travel_time)}</td>
+        <td class="mono">${formatLiveTime(r.inprogress_time)}</td>
+        <td class="mono">${formatLiveTime(r.completed_time)}</td>
+      </tr>
+    `)
+    .join("");
+
+  document.getElementById("liveSaBody").innerHTML =
+    rows || `<tr><td colspan="9" class="small-muted">Belum ada SA aktif.</td></tr>`;
+}
+
+let realtimeChannel = null;
+let realtimeRefreshTimer = null;
+
+function scheduleRealtimeRefresh() {
+  clearTimeout(realtimeRefreshTimer);
+
+  realtimeRefreshTimer = setTimeout(async () => {
+    try {
+      await loadRawRowsFromSupabase();
+
+      const select = document.getElementById("periodSelect");
+      const periods = syncState.periods || [];
+      const keys = periods.map(p => p.period_key);
+      const current = select?.value;
+
+      const nextPeriod = current && keys.includes(current)
+        ? current
+        : periods[0]?.period_key;
+
+      if (select && periods.length && nextPeriod) {
+        select.innerHTML = periods
+          .map(p => `<option value="${p.period_key}" ${p.period_key === nextPeriod ? "selected" : ""}>${p.period_label || p.period_key}</option>`)
+          .join("");
+
+        select.value = nextPeriod;
+      }
+
+      if (nextPeriod) {
+        await loadAndRender(nextPeriod);
+      } else {
+        await fetchLiveJobs();
+        renderLiveJobs(document.getElementById("liveSearch")?.value || "");
+      }
+
+      document.getElementById("connStatus").textContent = "realtime updated";
+    } catch (e) {
+      setAlert(`Realtime refresh gagal: <b>${e?.message || e}</b>`, "danger");
+    }
+  }, 500);
+}
+
+function startRealtime() {
+  if (realtimeChannel) {
+    supabase.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+
+  realtimeChannel = supabase
+    .channel("dashboard_realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: SA_JOBS_TABLE
+      },
+      payload => {
+        console.log("Realtime sa_jobs update:", payload);
+        scheduleRealtimeRefresh();
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: SA_RAW_TABLE
+      },
+      payload => {
+        console.log("Realtime sa_raw update:", payload);
+        scheduleRealtimeRefresh();
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: TS_RAW_TABLE
+      },
+      payload => {
+        console.log("Realtime timesheet_raw update:", payload);
+        scheduleRealtimeRefresh();
+      }
+    )
+    .subscribe(status => {
+      console.log("Realtime status:", status);
+      document.getElementById("connStatus").textContent =
+        status === "SUBSCRIBED" ? "sheet + supabase realtime connected" : status;
+    });
+}
+
     function mapSaRowForDb(r) {
       const row = {
         case_number: cleanCell(r.case_number),
@@ -1299,6 +1500,24 @@ function getTimesheetOverviewEval(pct) {
         .sort((a, b) => String(a.scheduled_start_at || "").localeCompare(String(b.scheduled_start_at || "")));
     }
 
+        async function loadRawRowsFromSupabase() {
+      const [
+        { data: dbSaRows, error: saReadError },
+        { data: dbTsRows, error: tsReadError }
+      ] = await Promise.all([
+        supabase.from(SA_RAW_TABLE).select("*"),
+        supabase.from(TS_RAW_TABLE).select("*")
+      ]);
+
+      if (saReadError) throw saReadError;
+      if (tsReadError) throw tsReadError;
+
+      syncState.saRows = dbSaRows || [];
+      syncState.tsRows = dbTsRows || [];
+      syncState.periods = buildPeriods(syncState.saRows, syncState.tsRows);
+      syncState.loaded = true;
+    }
+
     async function ensureSheetSynced(force = false) {
       if (syncState.syncing) return;
       if (syncState.loaded && !force) return;
@@ -1328,9 +1547,7 @@ function getTimesheetOverviewEval(pct) {
           TS_SHEET_NAME
         );
 
-        syncState.saRows = saRows;
-        syncState.tsRows = tsRows;
-        syncState.periods = buildPeriods(saRows, tsRows);
+        await loadRawRowsFromSupabase();
         syncState.lastSyncAt = new Date().toISOString();
         syncState.loaded = true;
       } finally {
@@ -1658,21 +1875,214 @@ function getTimesheetOverviewEval(pct) {
       document.getElementById("dq_tsTotal").textContent = String(ts.length);
     }
 
+    function upsertLiveJob(row) {
+  if (!row || !row.sa_id) return;
+
+  const idx = cache.liveJobs.findIndex(j => j.sa_id === row.sa_id);
+
+  if (idx >= 0) {
+    cache.liveJobs[idx] = row;
+  } else {
+    cache.liveJobs.unshift(row);
+  }
+}
+
+function removeLiveJob(row) {
+  if (!row || !row.sa_id) return;
+  cache.liveJobs = cache.liveJobs.filter(j => j.sa_id !== row.sa_id);
+}
+
+function startLiveSaRealtime() {
+  supabase
+    .channel("live_sa_jobs_channel")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: SA_JOBS_TABLE
+      },
+      (payload) => {
+        console.log("Realtime SA update:", payload);
+
+        if (payload.eventType === "DELETE") {
+          removeLiveJob(payload.old);
+        } else {
+          const row = payload.new;
+          const status = String(row?.status || "").toUpperCase();
+
+          if (status === "POST_ACTIVITY") {
+            removeLiveJob(row);
+          } else {
+            upsertLiveJob(row);
+          }
+        }
+
+        renderLiveJobs(document.getElementById("liveSearch")?.value || "");
+
+        const conn = document.getElementById("connStatus");
+        if (conn) {
+          conn.textContent = "supabase realtime connected";
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log("Realtime status:", status);
+
+      const conn = document.getElementById("connStatus");
+      if (conn) {
+        conn.textContent = status === "SUBSCRIBED"
+          ? "supabase realtime connected"
+          : `supabase realtime ${status}`;
+      }
+    });
+}
+
+function formatFastUpdateTime(v) {
+  if (!v) return "-";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "-";
+
+  return d.toLocaleString("id-ID", {
+    timeZone: "Asia/Makassar",
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function normalizeStatusLabel(status) {
+  return String(status || "-").replaceAll("_", " ");
+}
+
+async function fetchFastUpdates() {
+  const { data, error } = await supabase
+    .from(FAST_UPDATE_LOG_TABLE)
+    .select("*")
+    .order("clicked_at", { ascending: false })
+    .limit(20);
+
+  if (error) throw error;
+
+  cache.fastUpdates = data || [];
+}
+
+function upsertFastUpdateAlert(row) {
+  if (!row) return;
+
+  const key = row.id || `${row.nrp}-${row.sa_id}-${row.to_status}-${row.clicked_at}`;
+  const idx = cache.fastUpdates.findIndex(r => {
+    const rKey = r.id || `${r.nrp}-${r.sa_id}-${r.to_status}-${r.clicked_at}`;
+    return rKey === key;
+  });
+
+  if (idx >= 0) {
+    cache.fastUpdates[idx] = row;
+  } else {
+    cache.fastUpdates.unshift(row);
+  }
+
+  cache.fastUpdates = cache.fastUpdates.slice(0, 20);
+}
+
+function renderFastUpdateAlerts() {
+  const list = document.getElementById("fastUpdateAlertList");
+  const badge = document.getElementById("fastUpdateCountBadge");
+
+  if (!list) return;
+
+  const rows = cache.fastUpdates || [];
+
+  if (badge) {
+    badge.className = rows.length ? "badge-eval na" : "badge-eval ok";
+    badge.textContent = `${rows.length} alert`;
+  }
+
+  if (!rows.length) {
+    list.innerHTML = `
+      <div class="small-muted">
+        Belum ada mekanik yang klik status terlalu cepat.
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = rows.map(r => {
+    const toStatus = normalizeStatusLabel(r.to_status);
+    const fromStatus = normalizeStatusLabel(r.from_status);
+    const actual = Number(r.actual_minutes ?? 0);
+    const minimum = Number(r.minimum_minutes ?? 0);
+
+    return `
+      <div class="alert alert-danger mb-0 py-2">
+        <div class="fw-bold">
+          ❌ Jangan klik ${toStatus} &lt; ${minimum} menit
+        </div>
+        <div>
+          Baru <b>${actual} menit</b> sejak <b>${fromStatus}</b>.
+        </div>
+        <div class="small mt-1">
+          SA: <span class="mono">${r.sa_id || "-"}</span>
+          &nbsp;|&nbsp;
+          NRP: <span class="mono">${r.nrp || "-"}</span>
+          &nbsp;|&nbsp;
+          Waktu: <span class="mono">${formatFastUpdateTime(r.clicked_at)}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function startFastUpdateRealtime() {
+  supabase
+    .channel("fast_update_log_realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: FAST_UPDATE_LOG_TABLE
+      },
+      (payload) => {
+        console.log("Fast update alert:", payload);
+
+        upsertFastUpdateAlert(payload.new);
+        renderFastUpdateAlerts();
+
+        const conn = document.getElementById("connStatus");
+        if (conn) {
+          conn.textContent = "supabase realtime connected";
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log("Fast update realtime status:", status);
+    });
+}
+
     function wireSearch() {
-      document.getElementById("saSearch")?.addEventListener("input", (e) => renderSaTable(e.target.value));
-      document.getElementById("tsSearch")?.addEventListener("input", (e) => renderTimesheetTable(e.target.value));
-      document.getElementById("caseSearch")?.addEventListener("input", (e) => renderCaseTable(e.target.value));
-    }
+  document.getElementById("liveSearch")?.addEventListener("input", (e) => renderLiveJobs(e.target.value));
+  document.getElementById("saSearch")?.addEventListener("input", (e) => renderSaTable(e.target.value));
+  document.getElementById("tsSearch")?.addEventListener("input", (e) => renderTimesheetTable(e.target.value));
+  document.getElementById("caseSearch")?.addEventListener("input", (e) => renderCaseTable(e.target.value));
+}
 
     async function loadAndRender(periodKey) {
       setAlert(`Loading data period <b>${periodKey}</b>...`, "info");
       try {
         await fetchPeriodData(periodKey);
-        renderOverview();
-        renderSaTable(document.getElementById("saSearch")?.value || "");
-        renderTimesheetTable(document.getElementById("tsSearch")?.value || "");
-        renderCaseTable(document.getElementById("caseSearch")?.value || "");
-        renderDQ();
+await fetchLiveJobs();
+await fetchFastUpdates();
+
+renderOverview();
+renderLiveJobs(document.getElementById("liveSearch")?.value || "");
+renderFastUpdateAlerts();
+renderSaTable(document.getElementById("saSearch")?.value || "");
+renderTimesheetTable(document.getElementById("tsSearch")?.value || "");
+renderCaseTable(document.getElementById("caseSearch")?.value || "");
+renderDQ();
         setAlert("", "info");
       } catch (e) {
         setAlert(e.message || String(e), "danger");
@@ -1690,6 +2100,8 @@ function getTimesheetOverviewEval(pct) {
     async function boot() {
       document.getElementById("connStatus").textContent = "syncing sheet...";
       wireSearch();
+startLiveSaRealtime();
+startFastUpdateRealtime();
 
       try {
         const periods = await fetchPeriods();
@@ -1719,6 +2131,7 @@ function getTimesheetOverviewEval(pct) {
         };
 
         await loadAndRender(current);
+        startRealtime();
 
         const key = (location.hash || "#overview").replace("#", "");
         setActiveSection(SECTIONS[key] ? key : "overview");
