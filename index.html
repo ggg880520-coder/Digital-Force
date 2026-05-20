@@ -549,6 +549,88 @@
     @media(min-width: 768px){ .detail-summary-item{ grid-column: span 3; } }
 
 
+
+
+    /* Create SA Web - guided picker */
+    .create-sa-id-box{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+    .create-sa-id-value{
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #111827;
+      letter-spacing: .5px;
+    }
+    .mechanic-picker-box{
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+    .mechanic-picker-tools{
+      padding: 10px;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      background: #f8fafc;
+    }
+    .mechanic-options-list{
+      max-height: 210px;
+      overflow: auto;
+      padding: 6px;
+    }
+    .mechanic-option-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      cursor:pointer;
+      transition: background .15s ease;
+    }
+    .mechanic-option-item:hover{ background:#fff7ed; }
+    .mechanic-option-item input{ flex:0 0 auto; }
+    .mechanic-option-main{ font-weight:800; color:#111827; line-height:1.15; }
+    .mechanic-option-sub{ color: var(--textSoft); font-size:.78rem; }
+    .selected-mechanic-chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      min-height: 34px;
+      padding: 8px 0 0;
+    }
+    .selected-mechanic-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(243,112,33,.12);
+      color: #7a2f07;
+      border: 1px solid rgba(243,112,33,.18);
+      font-size:.8rem;
+      font-weight:800;
+    }
+    .selected-mechanic-chip button{
+      border:0;
+      background:transparent;
+      color:#7a2f07;
+      padding:0;
+      line-height:1;
+      font-weight:900;
+    }
+    .picker-empty{
+      color: var(--textSoft);
+      font-size:.88rem;
+      padding: 14px 10px;
+      text-align:center;
+    }
+
     /* Performance Analytics */
     .perf-grid{
       display:grid;
@@ -1192,40 +1274,68 @@
 
   <!-- CREATE SA MODAL -->
   <div class="modal fade" id="createSaModal" tabindex="-1" aria-labelledby="createSaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content" style="border-radius:22px; overflow:hidden;">
         <div class="modal-header" style="background:#101010; color:#fff; border-bottom:4px solid #ffd100;">
           <div>
             <h5 class="modal-title fw-bold" id="createSaModalLabel">Create SA dari Website</h5>
-            <div class="small" style="color:rgba(255,255,255,.72);">Data akan masuk ke Live SA dan tabel sa_jobs.</div>
+            <div class="small" style="color:rgba(255,255,255,.72);">Supervisor/admin cukup pilih mekanik, job type, dan site. Nomor SA dibuat otomatis oleh sistem.</div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="createSaForm">
           <div class="modal-body">
             <div class="alert alert-warning py-2 small mb-3">
-              Format sama seperti Telegram: <b>/cs BASE_SA_ID NRP JOB_TYPE SITE</b>. Untuk banyak mekanik, pisahkan NRP dengan koma.
+              Pilih mekanik dari data <b>TimeSheet</b>. Jika lebih dari satu mekanik dipilih, sistem otomatis membuat SA tim dengan format <b>SAxxx-NRP</b>.
             </div>
 
             <div class="mb-3">
               <label class="form-label fw-bold">Base SA ID</label>
-              <input type="text" class="form-control" id="webSaBaseId" placeholder="Contoh: SA007" required>
+              <div class="create-sa-id-box">
+                <div>
+                  <div class="small-muted">Nomor SA dibuat otomatis</div>
+                  <div class="create-sa-id-value mono" id="webSaBaseIdText">SA---</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-dark rounded-pill fw-bold" id="btnRegenerateWebSaId">
+                  <i class="bi bi-arrow-clockwise"></i> Generate ulang
+                </button>
+              </div>
+              <input type="hidden" id="webSaBaseId" required>
             </div>
 
             <div class="mb-3">
-              <label class="form-label fw-bold">NRP Mekanik</label>
-              <input type="text" class="form-control" id="webSaNrpList" placeholder="Contoh: 702230471 atau 0796,702230471" required>
-              <div class="form-text">Jika lebih dari satu NRP, sistem membuat SA tim: SA007-0796, SA007-702230471, dst.</div>
+              <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                <label class="form-label fw-bold mb-0">NRP Mekanik</label>
+                <span class="small-muted" id="webSaSelectedCount">0 dipilih</span>
+              </div>
+              <div class="mechanic-picker-box">
+                <div class="mechanic-picker-tools">
+                  <input type="text" class="form-control form-control-sm" id="webSaMechanicSearch" placeholder="Cari NRP atau nama mekanik...">
+                </div>
+                <div class="mechanic-options-list" id="webSaMechanicOptions">
+                  <div class="picker-empty">Membaca data mekanik dari TimeSheet...</div>
+                </div>
+              </div>
+              <div class="selected-mechanic-chips" id="webSaSelectedMechanics"></div>
+              <div class="form-text">Format pilihan: <b>NRP - NAMA MEKANIK</b>. Data diambil dari <b>timesheet_raw</b>.</div>
             </div>
 
             <div class="row g-2">
               <div class="col-12 col-md-6">
                 <label class="form-label fw-bold">Job Type</label>
-                <input type="text" class="form-control" id="webSaJobType" placeholder="Contoh: TRS" required>
+                <select class="form-select" id="webSaJobTypeSelect" required></select>
+                <div class="input-group input-group-sm mt-2">
+                  <input type="text" class="form-control" id="webSaJobTypeCustom" placeholder="Tambah job type manual, contoh: PS2000">
+                  <button class="btn btn-outline-dark fw-bold" type="button" id="btnAddJobTypeOption">Tambah</button>
+                </div>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label fw-bold">Site</label>
-                <input type="text" class="form-control" id="webSaSite" placeholder="Contoh: SITE-UDU" required>
+                <select class="form-select" id="webSaSiteSelect" required></select>
+                <div class="input-group input-group-sm mt-2">
+                  <input type="text" class="form-control" id="webSaSiteCustom" placeholder="Tambah site manual, contoh: BUMA - Sangkulirang">
+                  <button class="btn btn-outline-dark fw-bold" type="button" id="btnAddSiteOption">Tambah</button>
+                </div>
               </div>
             </div>
 
@@ -3337,6 +3447,13 @@ function startFastUpdateRealtime() {
       el.innerHTML = html ? `<div class="alert alert-${type} py-2 mb-0">${html}</div>` : "";
     }
 
+    const WEB_CREATE_DEFAULT_JOB_TYPES = ["R&I", "PIVOT", "PS250", "PS500", "PS1000", "PS2000", "PS4000", "TRS"];
+    const WEB_CREATE_DEFAULT_SITES = ["UDU - Sangkulirang", "KPP - Sangkulirang", "KM22 - Sangkulirang"];
+    const WEB_CREATE_JOB_TYPES_STORAGE = "digital_force_web_create_job_types";
+    const WEB_CREATE_SITES_STORAGE = "digital_force_web_create_sites";
+    let webCreateMechanics = [];
+    let webCreateSelectedMechanics = new Map();
+
     function parseWebNrpList(value) {
       return String(value || "")
         .split(",")
@@ -3345,9 +3462,248 @@ function startFastUpdateRealtime() {
         .filter((v, i, arr) => arr.indexOf(v) === i);
     }
 
+    function uniqClean(values) {
+      const seen = new Set();
+      return (values || [])
+        .map(v => String(v || "").trim())
+        .filter(Boolean)
+        .filter(v => {
+          const key = v.toUpperCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+    }
+
+    function loadLocalOptions(storageKey, defaults) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        return uniqClean([...(defaults || []), ...(Array.isArray(saved) ? saved : [])]);
+      } catch (_) {
+        return uniqClean(defaults || []);
+      }
+    }
+
+    function saveLocalOptions(storageKey, defaults, values) {
+      const defaultKeys = new Set((defaults || []).map(v => String(v).trim().toUpperCase()));
+      const customOnly = uniqClean(values).filter(v => !defaultKeys.has(v.toUpperCase()));
+      localStorage.setItem(storageKey, JSON.stringify(customOnly));
+    }
+
+    function fillSelectOptions(selectId, values, selectedValue = "") {
+      const el = document.getElementById(selectId);
+      if (!el) return;
+      const current = selectedValue || el.value;
+      el.innerHTML = values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+      if (current && values.some(v => v.toUpperCase() === current.toUpperCase())) {
+        el.value = values.find(v => v.toUpperCase() === current.toUpperCase());
+      }
+    }
+
+    function initCreateSaOptionSelects() {
+      fillSelectOptions("webSaJobTypeSelect", loadLocalOptions(WEB_CREATE_JOB_TYPES_STORAGE, WEB_CREATE_DEFAULT_JOB_TYPES));
+      fillSelectOptions("webSaSiteSelect", loadLocalOptions(WEB_CREATE_SITES_STORAGE, WEB_CREATE_DEFAULT_SITES));
+    }
+
+    function addCreateSaOption(kind) {
+      const isJob = kind === "job";
+      const inputId = isJob ? "webSaJobTypeCustom" : "webSaSiteCustom";
+      const selectId = isJob ? "webSaJobTypeSelect" : "webSaSiteSelect";
+      const storageKey = isJob ? WEB_CREATE_JOB_TYPES_STORAGE : WEB_CREATE_SITES_STORAGE;
+      const defaults = isJob ? WEB_CREATE_DEFAULT_JOB_TYPES : WEB_CREATE_DEFAULT_SITES;
+      const val = String(document.getElementById(inputId)?.value || "").trim();
+      if (!val) return;
+      const current = loadLocalOptions(storageKey, defaults);
+      const updated = uniqClean([...current, val]);
+      saveLocalOptions(storageKey, defaults, updated);
+      fillSelectOptions(selectId, updated, val);
+      document.getElementById(inputId).value = "";
+    }
+
+    function extractSaNumber(value) {
+      const s = String(value || "").trim().toUpperCase();
+      const match = s.match(/^SA0*(\d+)(?:\D|$)/);
+      return match ? Number(match[1]) : null;
+    }
+
+    function computeNextSaIdFromValues(values) {
+      let max = 0;
+      (values || []).forEach(v => {
+        const n = extractSaNumber(v);
+        if (Number.isFinite(n) && n > max) max = n;
+      });
+      const next = max + 1;
+      return `SA${String(next).padStart(3, "0")}`;
+    }
+
+    async function generateNextWebSaId() {
+      const values = [];
+      try {
+        const live = await supabase
+          .from(SA_JOBS_TABLE)
+          .select("sa_id,shared_sa_id")
+          .limit(3000);
+        if (!live.error && Array.isArray(live.data)) {
+          live.data.forEach(r => {
+            values.push(r.sa_id, r.shared_sa_id);
+          });
+        }
+      } catch (_) {}
+
+      try {
+        const raw = await supabase
+          .from(SA_RAW_TABLE)
+          .select("case_number,sa_number")
+          .limit(3000);
+        if (!raw.error && Array.isArray(raw.data)) {
+          raw.data.forEach(r => {
+            values.push(r.case_number, r.sa_number);
+          });
+        }
+      } catch (_) {}
+
+      (cache.liveJobs || []).forEach(r => values.push(r.sa_id, r.shared_sa_id));
+      (cache.postedLiveJobs || []).forEach(r => values.push(r.sa_id, r.shared_sa_id));
+      (cache.cases || []).forEach(r => values.push(r.case_number, r.sa_number));
+
+      const next = computeNextSaIdFromValues(values);
+      const input = document.getElementById("webSaBaseId");
+      const text = document.getElementById("webSaBaseIdText");
+      if (input) input.value = next;
+      if (text) text.textContent = next;
+      return next;
+    }
+
+    function normalizeMechanicOption(row) {
+      const nrp = String(row?.nrp || row?.NRP || "").trim();
+      if (!nrp) return null;
+      const name = cleanCell(row?.mechanic_name)
+        || cleanCell(row?.Mechanic_Name)
+        || cleanCell(row?.service_resource)
+        || cleanCell(row?.Service_Resource)
+        || cleanCell(row?.name)
+        || "UNKNOWN";
+      const isPlaceholder = Boolean(row?.is_placeholder);
+      const updatedAt = String(row?.updated_at || row?.date || "");
+      return { nrp, name, isPlaceholder, updatedAt, label: `${nrp} - ${name}` };
+    }
+
+    async function loadWebCreateMechanics() {
+      const byNrp = new Map();
+
+      function addRows(rows) {
+        (rows || []).forEach(row => {
+          const item = normalizeMechanicOption(row);
+          if (!item) return;
+          const old = byNrp.get(item.nrp);
+          if (!old) {
+            byNrp.set(item.nrp, item);
+            return;
+          }
+          const oldScore = (old.isPlaceholder ? 0 : 10) + (old.name !== "UNKNOWN" ? 1 : 0);
+          const newScore = (item.isPlaceholder ? 0 : 10) + (item.name !== "UNKNOWN" ? 1 : 0);
+          if (newScore > oldScore || (newScore === oldScore && item.updatedAt > old.updatedAt)) {
+            byNrp.set(item.nrp, item);
+          }
+        });
+      }
+
+      addRows(syncState.tsRows || []);
+      addRows(cache.timesheet || []);
+
+      try {
+        const ts = await supabase
+          .from(TS_RAW_TABLE)
+          .select("nrp,mechanic_name,service_resource,is_placeholder,updated_at,date")
+          .not("nrp", "is", null)
+          .limit(3000);
+        if (!ts.error) addRows(ts.data || []);
+      } catch (_) {}
+
+      if (!byNrp.size) {
+        try {
+          const users = await supabase
+            .from("bot_users")
+            .select("nrp,name,updated_at")
+            .not("nrp", "is", null)
+            .limit(1000);
+          if (!users.error) addRows(users.data || []);
+        } catch (_) {}
+      }
+
+      webCreateMechanics = Array.from(byNrp.values()).sort((a, b) => {
+        const an = a.name || "";
+        const bn = b.name || "";
+        return an.localeCompare(bn) || a.nrp.localeCompare(b.nrp);
+      });
+      renderWebCreateMechanicOptions();
+    }
+
+    function getWebCreateSelectedNrps() {
+      return Array.from(webCreateSelectedMechanics.keys());
+    }
+
+    function renderWebCreateSelectedChips() {
+      const box = document.getElementById("webSaSelectedMechanics");
+      const count = document.getElementById("webSaSelectedCount");
+      const selected = Array.from(webCreateSelectedMechanics.values());
+      if (count) count.textContent = `${selected.length} dipilih`;
+      if (!box) return;
+      if (!selected.length) {
+        box.innerHTML = `<span class="small-muted">Belum ada mekanik dipilih.</span>`;
+        return;
+      }
+      box.innerHTML = selected.map(m => `
+        <span class="selected-mechanic-chip">
+          ${escapeHtml(m.nrp)} - ${escapeHtml(m.name)}
+          <button type="button" data-remove-web-mechanic="${escapeHtml(m.nrp)}" aria-label="Hapus">×</button>
+        </span>
+      `).join("");
+    }
+
+    function renderWebCreateMechanicOptions() {
+      const list = document.getElementById("webSaMechanicOptions");
+      if (!list) return;
+      const q = String(document.getElementById("webSaMechanicSearch")?.value || "").trim().toLowerCase();
+      const filtered = webCreateMechanics.filter(m => {
+        const hay = `${m.nrp} ${m.name}`.toLowerCase();
+        return !q || hay.includes(q);
+      });
+      if (!filtered.length) {
+        list.innerHTML = `<div class="picker-empty">Tidak ada mekanik yang cocok.</div>`;
+        renderWebCreateSelectedChips();
+        return;
+      }
+      list.innerHTML = filtered.slice(0, 300).map(m => {
+        const checked = webCreateSelectedMechanics.has(m.nrp) ? "checked" : "";
+        const note = m.isPlaceholder ? "Data register/placeholder" : "Data TimeSheet";
+        return `
+          <label class="mechanic-option-item">
+            <input class="form-check-input mt-0" type="checkbox" data-web-mechanic-nrp="${escapeHtml(m.nrp)}" ${checked}>
+            <span>
+              <span class="mechanic-option-main">${escapeHtml(m.nrp)} - ${escapeHtml(m.name)}</span>
+              <span class="mechanic-option-sub d-block">${escapeHtml(note)}</span>
+            </span>
+          </label>
+        `;
+      }).join("");
+      renderWebCreateSelectedChips();
+    }
+
+    function toggleWebCreateMechanic(nrp, checked) {
+      const item = webCreateMechanics.find(m => m.nrp === nrp);
+      if (!item) return;
+      if (checked) webCreateSelectedMechanics.set(nrp, item);
+      else webCreateSelectedMechanics.delete(nrp);
+      renderWebCreateSelectedChips();
+    }
+
     async function getMechanicNameForWebCreate(nrp) {
       const key = String(nrp || "").trim();
       if (!key) return "UNKNOWN";
+
+      const picked = webCreateSelectedMechanics.get(key);
+      if (picked?.name) return picked.name;
 
       const cachedName = findMechanicNameByNrp(key);
       if (cachedName) return cachedName;
@@ -3410,13 +3766,15 @@ function startFastUpdateRealtime() {
       setCreateSaModalAlert("");
 
       const submitBtn = document.getElementById("btnSubmitCreateSa");
-      const baseSaId = String(document.getElementById("webSaBaseId")?.value || "").trim().toUpperCase();
-      const nrpList = parseWebNrpList(document.getElementById("webSaNrpList")?.value);
-      const jobType = String(document.getElementById("webSaJobType")?.value || "").trim().toUpperCase();
-      const site = String(document.getElementById("webSaSite")?.value || "").trim().toUpperCase();
+      let baseSaId = String(document.getElementById("webSaBaseId")?.value || "").trim().toUpperCase();
+      const nrpList = getWebCreateSelectedNrps();
+      const jobType = String(document.getElementById("webSaJobTypeSelect")?.value || "").trim().toUpperCase();
+      const site = String(document.getElementById("webSaSiteSelect")?.value || "").trim().toUpperCase();
+
+      if (!baseSaId) baseSaId = await generateNextWebSaId();
 
       if (!baseSaId || !nrpList.length || !jobType || !site) {
-        setCreateSaModalAlert("Lengkapi Base SA ID, NRP, Job Type, dan Site.", "danger");
+        setCreateSaModalAlert("Pilih mekanik, Job Type, dan Site terlebih dahulu.", "danger");
         return;
       }
 
@@ -3467,7 +3825,8 @@ function startFastUpdateRealtime() {
         const rowsToInsert = candidateRows.filter(r => !existingIds.has(String(r.sa_id).toUpperCase()));
 
         if (!rowsToInsert.length) {
-          setCreateSaModalAlert("Semua SA ID sudah ada. Gunakan Base SA ID lain.", "warning");
+          await generateNextWebSaId();
+          setCreateSaModalAlert("Nomor SA otomatis sudah terpakai. Sistem sudah generate ulang, silakan klik Simpan SA lagi.", "warning");
           return;
         }
 
@@ -3479,12 +3838,14 @@ function startFastUpdateRealtime() {
 
         await fetchLiveJobs();
         renderLiveJobs(document.getElementById("liveSearch")?.value || "");
-        setAlert(`Create SA berhasil: <b>${rowsToInsert.map(r => escapeHtml(r.sa_id)).join(", ")}</b>. Data sudah masuk ke Live SA.`, "success");
+        setAlert(`Create SA berhasil: <b>${rowsToInsert.map(r => escapeHtml(r.sa_id)).join(", ")}</b>. Data sudah masuk ke Live SA dan akan dikirim ke Telegram oleh bot.`, "success");
 
         const modalEl = document.getElementById("createSaModal");
         const modal = bootstrap.Modal.getInstance(modalEl);
         modal?.hide();
         document.getElementById("createSaForm")?.reset();
+        webCreateSelectedMechanics.clear();
+        renderWebCreateMechanicOptions();
       } catch (e) {
         setCreateSaModalAlert(`Gagal create SA: <b>${escapeHtml(e?.message || e)}</b><br><span class="small">Pastikan policy INSERT sa_jobs/RPC Supabase sudah aktif.</span>`, "danger");
       } finally {
@@ -3493,17 +3854,39 @@ function startFastUpdateRealtime() {
       }
     }
 
-    function openCreateSaModal() {
+    async function openCreateSaModal() {
       setCreateSaModalAlert("");
+      initCreateSaOptionSelects();
+      webCreateSelectedMechanics.clear();
+      renderWebCreateSelectedChips();
       const modalEl = document.getElementById("createSaModal");
       const modal = new bootstrap.Modal(modalEl);
       modal.show();
-      setTimeout(() => document.getElementById("webSaBaseId")?.focus(), 250);
+      await generateNextWebSaId();
+      await loadWebCreateMechanics();
+      setTimeout(() => document.getElementById("webSaMechanicSearch")?.focus(), 250);
     }
 
     function wireActions() {
       document.getElementById("btnCreateSa")?.addEventListener("click", openCreateSaModal);
       document.getElementById("createSaForm")?.addEventListener("submit", createSaFromWebsite);
+      document.getElementById("btnRegenerateWebSaId")?.addEventListener("click", generateNextWebSaId);
+      document.getElementById("btnAddJobTypeOption")?.addEventListener("click", () => addCreateSaOption("job"));
+      document.getElementById("btnAddSiteOption")?.addEventListener("click", () => addCreateSaOption("site"));
+      document.getElementById("webSaJobTypeCustom")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addCreateSaOption("job"); } });
+      document.getElementById("webSaSiteCustom")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addCreateSaOption("site"); } });
+      document.getElementById("webSaMechanicSearch")?.addEventListener("input", renderWebCreateMechanicOptions);
+      document.getElementById("webSaMechanicOptions")?.addEventListener("change", (event) => {
+        const checkbox = event.target.closest("[data-web-mechanic-nrp]");
+        if (!checkbox) return;
+        toggleWebCreateMechanic(checkbox.getAttribute("data-web-mechanic-nrp"), checkbox.checked);
+      });
+      document.getElementById("webSaSelectedMechanics")?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-remove-web-mechanic]");
+        if (!btn) return;
+        webCreateSelectedMechanics.delete(btn.getAttribute("data-remove-web-mechanic"));
+        renderWebCreateMechanicOptions();
+      });
       document.getElementById("btnAjukanUpdate")?.addEventListener("click", refreshDashboardFromSupabase);
       document.getElementById("btnBackToSa")?.addEventListener("click", () => {
         location.hash = "sa";
