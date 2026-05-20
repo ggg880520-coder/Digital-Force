@@ -1916,8 +1916,7 @@ function mapPostedJobToSaRaw(row) {
 }
 
 function getCombinedSaSourceRows() {
-  const postedRows = (cache.postedLiveJobs || []).map(mapPostedJobToSaRaw);
-  const all = [...(syncState.saRows || []), ...postedRows];
+  const all = [...(syncState.saRows || [])];
   const seen = new Set();
 
   return all.filter(row => {
