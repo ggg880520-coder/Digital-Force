@@ -1347,6 +1347,143 @@
       }
     }
 
+
+    /* =========================================================
+       PAGE HEADER CLEAN FINAL
+       - Hilangkan subtitle kecil dan status koneksi pada topbar
+       - Besarkan judul dan icon halaman
+       - Live SA memakai simbol bulat merah dan tanpa filter periode
+    ========================================================= */
+    .topbar{
+      padding: 20px 24px;
+    }
+
+    .page-icon{
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color: var(--utOrange);
+      background: rgba(243,112,33,.10);
+      border: 1px solid rgba(243,112,33,.18);
+      flex: 0 0 auto;
+      font-size: 1.25rem;
+    }
+
+    #pageTitle{
+      font-size: 1.52rem !important;
+      line-height: 1.12;
+      font-weight: 900 !important;
+      letter-spacing: .1px;
+      color: #1f2937;
+    }
+
+    #pageSubtitle,
+    .topbar-status-row{
+      display: none !important;
+    }
+
+    .period-control label{
+      font-size: .96rem;
+      font-weight: 700;
+    }
+
+    .period-control .form-select{
+      min-height: 42px;
+      font-weight: 700;
+      border-radius: 14px;
+    }
+
+    .topbar.live-mode .period-control{
+      display: none !important;
+    }
+
+    .topbar.live-mode .page-icon{
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      background: rgba(239,68,68,.14);
+      border-color: rgba(239,68,68,.24);
+      color: #dc2626;
+      position: relative;
+    }
+
+    .topbar.live-mode .page-icon i{
+      display: none;
+    }
+
+    .topbar.live-mode .page-icon::before{
+      content:"";
+      width: 15px;
+      height: 15px;
+      border-radius: 999px;
+      background: #ef4444;
+      box-shadow: 0 0 0 6px rgba(239,68,68,.16);
+      display:block;
+      animation: livePulse 1.35s ease-in-out infinite;
+    }
+
+    @keyframes livePulse{
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(.82); opacity: .72; }
+    }
+
+    @media(max-width: 768px){
+      .topbar{
+        padding: 16px 16px !important;
+        border-radius: 20px !important;
+      }
+      .topbar .d-flex.flex-wrap.align-items-center.justify-content-between{
+        align-items: center !important;
+      }
+      .page-icon{
+        width: 36px;
+        height: 36px;
+        border-radius: 13px;
+        font-size: 1.28rem;
+      }
+      .topbar.live-mode .page-icon{
+        width: 38px;
+        height: 38px;
+      }
+      #pageTitle{
+        font-size: 1.32rem !important;
+        line-height: 1.08;
+      }
+      .period-control{
+        margin-left: auto;
+        width: auto !important;
+        background: transparent !important;
+        border: 0 !important;
+        padding: 0 !important;
+      }
+      .period-control label{
+        display: none;
+      }
+      .period-control .form-select{
+        min-width: 124px !important;
+        max-width: 42vw !important;
+        min-height: 38px;
+        font-size: .85rem;
+      }
+    }
+
+    @media(max-width: 420px){
+      #pageTitle{
+        font-size: 1.22rem !important;
+      }
+      .page-icon{
+        width: 34px;
+        height: 34px;
+      }
+      .period-control .form-select{
+        min-width: 118px !important;
+        max-width: 44vw !important;
+      }
+    }
+
   </style>
 </head>
 
@@ -1387,19 +1524,19 @@
     <div class="topbar mb-3">
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-graph-up-arrow" style="font-size:1.1rem;color:var(--utOrange)"></i>
+          <span class="page-icon" id="pageIcon"><i class="bi bi-graph-up-arrow"></i></span>
           <div>
             <div class="fs-5 fw-bold" id="pageTitle">Overview</div>
             <div class="small-muted" id="pageSubtitle">Ringkasan Rasio SA dan TimeSheet.</div>
           </div>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 period-control" id="periodControl">
           <label class="small-muted mb-0">Periode</label>
           <select class="form-select form-select-sm" id="periodSelect" style="min-width: 140px"></select>
         </div>
       </div>
-      <div class="small-muted mt-2">
+      <div class="small-muted mt-2 topbar-status-row">
         Status: <span class="status-dot"></span><span id="connStatus" class="mono">-</span>
       </div>
     </div>
@@ -1992,6 +2129,9 @@
       document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
       const active = document.getElementById(secId);
       if (active) active.classList.add("active");
+
+      const topbar = document.querySelector(".topbar");
+      if (topbar) topbar.classList.toggle("live-mode", key === "live");
 
             document.querySelectorAll(".main-nav a[data-section]").forEach(a => {
         const navKey = a.getAttribute("data-section");
