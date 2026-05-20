@@ -659,6 +659,25 @@
       .perf-card.span-6{ grid-column: span 6; }
     }
 
+
+    .fast-update-filter{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .fast-update-filter label{
+      font-size:.82rem;
+      color: var(--textSoft);
+      font-weight:700;
+      margin:0;
+    }
+    .fast-update-filter .form-select{
+      min-width: 150px;
+      background-color: rgba(255,255,255,.92);
+    }
+
   </style>
 </head>
 
@@ -853,9 +872,21 @@
           <div class="fw-bold">Notif Update Terlalu Cepat</div>
           <div class="small-muted">Muncul otomatis jika mekanik klik status sebelum batas minimum waktu.</div>
         </div>
-        <span class="badge-eval na" id="fastUpdateCountBadge">0 alert</span>
+        <div class="fast-update-filter">
+          <label for="fastUpdateRange">Filter</label>
+          <select id="fastUpdateRange" class="form-select form-select-sm">
+            <option value="day">Hari ini</option>
+            <option value="week">7 hari terakhir</option>
+            <option value="month" selected>30 hari terakhir</option>
+            <option value="quarter">3 bulan terakhir</option>
+            <option value="year">1 tahun terakhir</option>
+            <option value="all">Semua data</option>
+          </select>
+          <span class="badge-eval na" id="fastUpdateCountBadge">0 alert</span>
+        </div>
       </div>
 
+      <div class="small-muted mb-2" id="fastUpdateFilterInfo">Menampilkan alert 30 hari terakhir.</div>
       <div id="fastUpdateAlertList" class="d-grid gap-2"></div>
     </div>
   </div>
@@ -2991,16 +3022,64 @@ function normalizeStatusLabel(status) {
   return String(status || "-").replaceAll("_", " ");
 }
 
+const FAST_UPDATE_RANGE_OPTIONS = {
+  day: { label: "hari ini", days: 1 },
+  week: { label: "7 hari terakhir", days: 7 },
+  month: { label: "30 hari terakhir", days: 30 },
+  quarter: { label: "3 bulan terakhir", days: 90 },
+  year: { label: "1 tahun terakhir", days: 365 },
+  all: { label: "semua data", days: null }
+};
+
+function getFastUpdateSelectedRange() {
+  const val = document.getElementById("fastUpdateRange")?.value || "month";
+  return FAST_UPDATE_RANGE_OPTIONS[val] ? val : "month";
+}
+
+function getFastUpdateStartIso(rangeKey = getFastUpdateSelectedRange()) {
+  const opt = FAST_UPDATE_RANGE_OPTIONS[rangeKey] || FAST_UPDATE_RANGE_OPTIONS.month;
+  if (!opt.days) return null;
+
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+
+  if (opt.days > 1) {
+    start.setDate(start.getDate() - (opt.days - 1));
+  }
+
+  return start.toISOString();
+}
+
+function updateFastUpdateFilterInfo(total = null) {
+  const info = document.getElementById("fastUpdateFilterInfo");
+  if (!info) return;
+
+  const key = getFastUpdateSelectedRange();
+  const opt = FAST_UPDATE_RANGE_OPTIONS[key] || FAST_UPDATE_RANGE_OPTIONS.month;
+  const countText = Number.isFinite(Number(total)) ? ` Total: ${Number(total)} alert.` : "";
+  info.textContent = `Menampilkan alert ${opt.label}.${countText}`;
+}
+
 async function fetchFastUpdates() {
-  const { data, error } = await supabase
+  const rangeKey = getFastUpdateSelectedRange();
+  const startIso = getFastUpdateStartIso(rangeKey);
+
+  let query = supabase
     .from(FAST_UPDATE_LOG_TABLE)
     .select("*")
     .order("clicked_at", { ascending: false })
-    .limit(20);
+    .limit(rangeKey === "all" ? 1000 : 500);
+
+  if (startIso) {
+    query = query.gte("clicked_at", startIso);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
 
   cache.fastUpdates = data || [];
+  updateFastUpdateFilterInfo(cache.fastUpdates.length);
 }
 
 function upsertFastUpdateAlert(row) {
@@ -3018,7 +3097,8 @@ function upsertFastUpdateAlert(row) {
     cache.fastUpdates.unshift(row);
   }
 
-  cache.fastUpdates = cache.fastUpdates.slice(0, 20);
+  cache.fastUpdates.sort((a, b) => new Date(b.clicked_at || 0) - new Date(a.clicked_at || 0));
+  cache.fastUpdates = cache.fastUpdates.slice(0, getFastUpdateSelectedRange() === "all" ? 1000 : 500);
 }
 
 function renderFastUpdateAlerts() {
@@ -3028,6 +3108,7 @@ function renderFastUpdateAlerts() {
   if (!list) return;
 
   const rows = cache.fastUpdates || [];
+  updateFastUpdateFilterInfo(rows.length);
 
   if (badge) {
     badge.className = rows.length ? "badge-eval na" : "badge-eval ok";
@@ -3037,7 +3118,7 @@ function renderFastUpdateAlerts() {
   if (!rows.length) {
     list.innerHTML = `
       <div class="small-muted">
-        Belum ada mekanik yang klik status terlalu cepat.
+        Belum ada mekanik yang klik status terlalu cepat pada filter waktu ini.
       </div>
     `;
     return;
@@ -3217,6 +3298,14 @@ function startFastUpdateRealtime() {
   document.getElementById("saSearch")?.addEventListener("input", (e) => renderSaTable(e.target.value));
   document.getElementById("tsSearch")?.addEventListener("input", (e) => renderTimesheetTable(e.target.value));
   document.getElementById("mechanicDetailSearch")?.addEventListener("input", (e) => renderMechanicDetail(e.target.value));
+  document.getElementById("fastUpdateRange")?.addEventListener("change", async () => {
+    try {
+      await fetchFastUpdates();
+      renderFastUpdateAlerts();
+    } catch (e) {
+      setAlert(`Gagal memuat filter alert update cepat: <b>${escapeHtml(e?.message || e)}</b>`, "danger");
+    }
+  });
 }
 
     async function loadAndRender(periodKey) {
