@@ -447,6 +447,44 @@
       background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.12);
     }
 
+    .mechanic-link{
+      border: 0;
+      background: transparent;
+      color: var(--utOrangeDark);
+      font-weight: 800;
+      padding: 0;
+      text-align: left;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .mechanic-link:hover{
+      color: var(--utOrange);
+      text-decoration: underline;
+    }
+    .detail-title-box{
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #fffdf9 0%, #fff4ea 100%);
+      border: 1px solid rgba(243,112,33,.16);
+    }
+    .detail-title-box .detail-name{
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #111827;
+      line-height: 1.15;
+    }
+    .detail-summary-grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+    .detail-summary-item{ grid-column: span 12; }
+    @media(min-width: 768px){ .detail-summary-item{ grid-column: span 3; } }
+
 
     /* Performance Analytics */
     .perf-grid{
@@ -580,7 +618,6 @@
       <a href="#live" data-section="live" class="nav-link-side">LIVE SA</a>
       <a href="#sa" data-section="sa" class="nav-link-side">RASIO SA</a>
       <a href="#timesheet" data-section="timesheet" class="nav-link-side">TIMESHEET</a>
-      <a href="#cases" data-section="cases" class="nav-link-side">DETAIL SA</a>
       <a href="#dq" data-section="dq" class="nav-link-side">PERFORMANCE</a>
 
       <div class="nav-spacer"></div>
@@ -849,32 +886,66 @@
       </div>
     </section>
 
-    <!-- DETAIL SA -->
-<section id="sec-cases" class="section">
+    <!-- DETAIL SA PER MEKANIK -->
+<section id="sec-mechanic-detail" class="section">
   <div class="toolbar">
-    <input id="caseSearch" class="form-control form-control-sm searchbox" placeholder="Cari case number / appointment / mekanik / area...">
-    <div class="small-muted" id="caseTableInfo">-</div>
+    <button type="button" id="btnBackToSa" class="btn btn-sm btn-outline-dark rounded-pill fw-bold">
+      <i class="bi bi-arrow-left"></i> Kembali ke Rasio SA
+    </button>
+    <input id="mechanicDetailSearch" class="form-control form-control-sm searchbox" placeholder="Cari case / appointment / area...">
   </div>
 
   <div class="card card-kpi">
     <div class="card-body">
-      <div class="fw-bold mb-1">Detail SA</div>
-      <div class="small-muted mb-3">Data case yang sudah dibersihkan per periode dari view Supabase.</div>
+      <div class="detail-title-box mb-3">
+        <div class="small-muted mb-1">Detail SA Mekanik</div>
+        <div class="detail-name" id="selectedMechanicName">Pilih mekanik dari menu Rasio SA</div>
+        <div class="small-muted mt-1" id="mechanicDetailInfo">Klik nama mekanik pada tabel Rasio SA untuk melihat detail case.</div>
+      </div>
+
+      <div class="detail-summary-grid">
+        <div class="detail-summary-item">
+          <div class="metric-box">
+            <div class="small-muted">Total Case</div>
+            <div class="fs-5 fw-bold mono" id="detailTotalCase">-</div>
+          </div>
+        </div>
+        <div class="detail-summary-item">
+          <div class="metric-box">
+            <div class="small-muted">Accurate</div>
+            <div class="fs-5 fw-bold mono" id="detailAccurateCase">-</div>
+          </div>
+        </div>
+        <div class="detail-summary-item">
+          <div class="metric-box">
+            <div class="small-muted">Not Accurate</div>
+            <div class="fs-5 fw-bold mono" id="detailNotAccurateCase">-</div>
+          </div>
+        </div>
+        <div class="detail-summary-item">
+          <div class="metric-box">
+            <div class="small-muted">Accuracy Ratio</div>
+            <div class="fs-5 fw-bold mono" id="detailAccuracyRatio">-</div>
+          </div>
+        </div>
+      </div>
+
       <div class="table-responsive">
         <table class="table table-sm table-hover align-middle">
           <thead>
             <tr>
               <th>Case</th>
               <th>Appointment</th>
-              <th>Mekanik</th>
               <th>Area</th>
               <th>Scheduled Start</th>
+              <th>Completed</th>
               <th>Submitted</th>
               <th>Approved</th>
+              <th class="text-end">Lead Input</th>
               <th class="text-center">Accuracy</th>
             </tr>
           </thead>
-          <tbody id="caseBody"></tbody>
+          <tbody id="mechanicDetailBody"></tbody>
         </table>
       </div>
     </div>
@@ -1066,9 +1137,9 @@
     const SECTIONS = {
   overview: { title: "Overview", subtitle: "Ringkasan Rasio SA dan TimeSheet berdasarkan view Supabase yang sudah dibersihkan." },
   live: { title: "Live SA", subtitle: "Status SA aktif dari Telegram Bot secara realtime." },
-  sa: { title: "Rasio SA", subtitle: "Agregasi akurasi staging SA per mekanik." },
+  sa: { title: "Rasio SA", subtitle: "Agregasi akurasi staging SA per mekanik. Klik nama mekanik untuk melihat detail SA." },
   timesheet: { title: "TimeSheet", subtitle: "Kinerja mekanik dari data JA, JE, ACH, TDT, dan EFH." },
-  cases: { title: "Detail SA", subtitle: "Detail dari sheet Rasio SA." },
+  "mechanic-detail": { title: "Detail SA Mekanik", subtitle: "Sub halaman detail case berdasarkan nama mekanik yang dipilih dari Rasio SA." },
   dq: { title: "Performance Analytics", subtitle: "Grafik performa SA, hours, JA, dan JE dari data Detail SA dan TimeSheet." }
 };
 
@@ -1079,7 +1150,8 @@
       if (active) active.classList.add("active");
 
             document.querySelectorAll(".main-nav a[data-section]").forEach(a => {
-        a.classList.toggle("active", a.getAttribute("data-section") === key);
+        const navKey = a.getAttribute("data-section");
+        a.classList.toggle("active", navKey === key || (key === "mechanic-detail" && navKey === "sa"));
       });
 
       document.getElementById("pageTitle").textContent = SECTIONS[key]?.title || "Dashboard";
@@ -1125,6 +1197,7 @@ fastUpdates: []
         };
         let saChart = null;
         let analyticsCharts = {};
+        let selectedMechanicName = null;
 
         function formatPct01(val, decimals=1) {
           const n = Number(val);
@@ -2047,7 +2120,11 @@ function getTimesheetOverviewEval(pct) {
 
           return `
             <tr>
-              <td>${cellHtml(r.mechanic_name)}</td>
+              <td>
+                <button type="button" class="mechanic-link" data-mechanic-detail="${escapeHtml(r.mechanic_name)}" title="Lihat detail SA ${escapeHtml(r.mechanic_name)}">
+                  ${cellHtml(r.mechanic_name)} <i class="bi bi-chevron-right"></i>
+                </button>
+              </td>
               <td class="text-end mono">${formatNumber(r.accurate_case ?? 0)}</td>
               <td class="text-end mono">${formatNumber(r.not_accurate_case ?? 0)}${(r.not_accurate_case ?? 0) > 0 ? `<span class="badge bg-warning text-dark ms-2">cek</span>` : ""}</td>
               <td class="text-end mono">${formatPercent(Number(r.ratio_pct) || 0, 1)}</td>
@@ -2099,6 +2176,8 @@ function getTimesheetOverviewEval(pct) {
     }
 
     function renderCaseTable(filter = "") {
+      const body = document.getElementById("caseBody");
+      if (!body) return;
       const q = filter.trim().toLowerCase();
 
       const rows = [...(cache.cases || [])]
@@ -2131,11 +2210,108 @@ function getTimesheetOverviewEval(pct) {
         `)
         .join("");
 
-      document.getElementById("caseBody").innerHTML =
+      body.innerHTML =
         rows || `<tr><td colspan="8" class="small-muted">Tidak ada data yang sesuai.</td></tr>`;
 
       const caseInfo = document.getElementById("caseTableInfo");
       if (caseInfo) caseInfo.textContent = `${formatNumber((cache.cases || []).length)} case tersedia`;
+    }
+
+    function openMechanicDetail(mechanicName) {
+      const name = String(mechanicName || "").trim();
+      if (!name) return;
+
+      selectedMechanicName = name;
+      const search = document.getElementById("mechanicDetailSearch");
+      if (search) search.value = "";
+
+      if (location.hash !== "#mechanic-detail") {
+        location.hash = "mechanic-detail";
+      }
+      setActiveSection("mechanic-detail");
+      renderMechanicDetail();
+    }
+
+    function renderMechanicDetail(filter = "") {
+      const body = document.getElementById("mechanicDetailBody");
+      if (!body) return;
+
+      const selectedName = String(selectedMechanicName || "").trim();
+      const q = String(filter || "").trim().toLowerCase();
+      const selectedLower = selectedName.toLowerCase();
+
+      const selectedNameEl = document.getElementById("selectedMechanicName");
+      const infoEl = document.getElementById("mechanicDetailInfo");
+
+      if (!selectedName) {
+        if (selectedNameEl) selectedNameEl.textContent = "Pilih mekanik dari menu Rasio SA";
+        if (infoEl) infoEl.textContent = "Klik nama mekanik pada tabel Rasio SA untuk melihat detail case.";
+        document.getElementById("detailTotalCase").textContent = "-";
+        document.getElementById("detailAccurateCase").textContent = "-";
+        document.getElementById("detailNotAccurateCase").textContent = "-";
+        document.getElementById("detailAccuracyRatio").textContent = "-";
+        body.innerHTML = `<tr><td colspan="9" class="small-muted">Belum ada mekanik yang dipilih.</td></tr>`;
+        return;
+      }
+
+      const allRows = [...(cache.cases || [])]
+        .filter(r => String(r.mechanic_name || "").trim().toLowerCase() === selectedLower);
+
+      const filteredRows = allRows.filter(r => {
+        if (!q) return true;
+        return [
+          r.case_number,
+          r.appointment_number,
+          r.service_area,
+          r.scheduled_start_at,
+          r.actual_completed_at,
+          r.time_sheet_submitted_at,
+          r.time_sheet_approved_at
+        ].some(v => String(v || "").toLowerCase().includes(q));
+      });
+
+      const accurate = allRows.filter(r => Number(r.sa_staging_accuracy) === 1).length;
+      const notAccurate = allRows.filter(r => Number(r.sa_staging_accuracy) === 0).length;
+      const evaluable = accurate + notAccurate;
+      const ratio = evaluable ? (accurate / evaluable) * 100 : null;
+
+      if (selectedNameEl) selectedNameEl.textContent = selectedName;
+      if (infoEl) {
+        infoEl.textContent = `${formatNumber(allRows.length)} case tersedia pada periode ${cache.periodKey || "-"}`;
+      }
+      document.getElementById("detailTotalCase").textContent = formatNumber(allRows.length);
+      document.getElementById("detailAccurateCase").textContent = formatNumber(accurate);
+      document.getElementById("detailNotAccurateCase").textContent = formatNumber(notAccurate);
+      document.getElementById("detailAccuracyRatio").textContent = Number.isFinite(ratio) ? formatPercent(ratio, 1) : "-";
+
+      const rows = filteredRows
+        .map(r => {
+          const lead = diffDays(r.actual_completed_at, r.time_sheet_submitted_at);
+          const leadText = Number.isFinite(lead) ? `${lead.toFixed(1)} hari` : "-";
+
+          return `
+            <tr>
+              <td class="mono">${cellHtml(r.case_number)}</td>
+              <td class="mono">${cellHtml(r.appointment_number)}</td>
+              <td>${cellHtml(r.service_area)}</td>
+              <td class="mono">${formatDateTimeID(r.scheduled_start_at)}</td>
+              <td class="mono">${formatDateTimeID(r.actual_completed_at)}</td>
+              <td class="mono">${formatDateTimeID(r.time_sheet_submitted_at)}</td>
+              <td class="mono">${formatDateTimeID(r.time_sheet_approved_at)}</td>
+              <td class="text-end mono">${leadText}</td>
+              <td class="text-center">
+                ${Number(r.sa_staging_accuracy) === 1
+                  ? `<span class="badge bg-success">Accurate</span>`
+                  : Number(r.sa_staging_accuracy) === 0
+                    ? `<span class="badge bg-warning text-dark">Not Accurate</span>`
+                    : `-`}
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      body.innerHTML = rows || `<tr><td colspan="9" class="small-muted">Tidak ada detail SA yang sesuai filter.</td></tr>`;
     }
 
     function monthLabelShort(key) {
@@ -2275,7 +2451,42 @@ function getTimesheetOverviewEval(pct) {
       analyticsCharts[id] = new Chart(ctx, config);
     }
 
-    function renderBarTrend(id, labels, values, label, percent = false) {
+    const PERF_CHART_COLORS = {
+      available: { fill: "rgba(20, 184, 166, .92)", border: "rgba(94, 234, 212, .95)" },
+      ach: { fill: "rgba(139, 92, 246, .92)", border: "rgba(196, 181, 253, .95)" },
+      tdt: { fill: "rgba(245, 158, 11, .92)", border: "rgba(252, 211, 77, .95)" },
+      efh: { fill: "rgba(34, 197, 94, .92)", border: "rgba(134, 239, 172, .95)" },
+      ja: { fill: "rgba(14, 165, 233, .92)", border: "rgba(125, 211, 252, .95)" },
+      je: { fill: "rgba(236, 72, 153, .92)", border: "rgba(249, 168, 212, .95)" },
+      qty: { fill: "rgba(249, 115, 22, .92)", border: "rgba(253, 186, 116, .95)" },
+      default: { fill: "rgba(59, 130, 246, .92)", border: "rgba(147, 197, 253, .95)" }
+    };
+
+    const PERF_MULTI_COLORS = [
+      "rgba(14, 165, 233, .92)",
+      "rgba(20, 184, 166, .92)",
+      "rgba(34, 197, 94, .92)",
+      "rgba(245, 158, 11, .92)",
+      "rgba(249, 115, 22, .92)",
+      "rgba(236, 72, 153, .92)",
+      "rgba(168, 85, 247, .92)",
+      "rgba(99, 102, 241, .92)",
+      "rgba(239, 68, 68, .90)",
+      "rgba(234, 179, 8, .90)",
+      "rgba(45, 212, 191, .90)",
+      "rgba(56, 189, 248, .90)"
+    ];
+
+    function perfChartColor(key = "default") {
+      return PERF_CHART_COLORS[key] || PERF_CHART_COLORS.default;
+    }
+
+    function perfMultiColors(count = 1, offset = 0) {
+      return Array.from({ length: Math.max(1, count) }, (_, i) => PERF_MULTI_COLORS[(i + offset) % PERF_MULTI_COLORS.length]);
+    }
+
+    function renderBarTrend(id, labels, values, label, percent = false, colorKey = "default") {
+      const color = perfChartColor(colorKey);
       makePerfChart(id, {
         type: "bar",
         data: {
@@ -2283,10 +2494,10 @@ function getTimesheetOverviewEval(pct) {
           datasets: [{
             label,
             data: values,
-            backgroundColor: "rgba(59, 154, 230, .92)",
-            borderColor: "rgba(147, 197, 253, .95)",
+            backgroundColor: color.fill,
+            borderColor: color.border,
             borderWidth: 1,
-            borderRadius: 2,
+            borderRadius: 3,
             maxBarThickness: 54
           }]
         },
@@ -2303,7 +2514,10 @@ function getTimesheetOverviewEval(pct) {
       });
     }
 
-    function renderHorizontalBar(id, rows, metric, label, percent = false) {
+    function renderHorizontalBar(id, rows, metric, label, percent = false, colorKey = "default", multiColor = true) {
+      const color = perfChartColor(colorKey);
+      const offsetMap = { available: 1, ach: 6, tdt: 3, efh: 2, qty: 4, ja: 0, je: 5 };
+      const count = rows?.length || 1;
       makePerfChart(id, {
         type: "bar",
         data: {
@@ -2311,10 +2525,10 @@ function getTimesheetOverviewEval(pct) {
           datasets: [{
             label,
             data: rows.map(r => Number(r[metric]) || Number(r.value) || 0),
-            backgroundColor: "rgba(59, 154, 230, .92)",
-            borderColor: "rgba(147, 197, 253, .95)",
+            backgroundColor: multiColor ? perfMultiColors(count, offsetMap[colorKey] || 0) : color.fill,
+            borderColor: color.border,
             borderWidth: 1,
-            borderRadius: 2,
+            borderRadius: 3,
             maxBarThickness: 22
           }]
         },
@@ -2341,7 +2555,7 @@ function getTimesheetOverviewEval(pct) {
           labels: ["Accurate", "Not Accurate"],
           datasets: [{
             data: [accurate, notAccurate],
-            backgroundColor: ["rgba(34,197,94,.82)", "rgba(245,158,11,.88)"],
+            backgroundColor: ["rgba(34,197,94,.88)", "rgba(239,68,68,.90)"],
             borderColor: "rgba(255,255,255,.10)",
             borderWidth: 2
           }]
@@ -2405,20 +2619,20 @@ function getTimesheetOverviewEval(pct) {
       const jaTrend = buildMetricByMonth("ja");
       const jeTrend = buildMetricByMonth("je");
 
-      renderBarTrend("perfAvailTrendChart", availTrend.labels, availTrend.values, "Available Hours");
-      renderBarTrend("perfAchTrendChart", achTrend.labels, achTrend.values, "Man Hours");
-      renderBarTrend("perfTdtTrendChart", tdtTrend.labels, tdtTrend.values, "Development Hours");
-      renderBarTrend("perfEfhTrendChart", efhTrend.labels, efhTrend.values, "Effective Hours");
-      renderBarTrend("perfJaTrendChart", jaTrend.labels, jaTrend.values, "Job Availability", true);
-      renderBarTrend("perfJeTrendChart", jeTrend.labels, jeTrend.values, "Job Effectiveness", true);
+      renderBarTrend("perfAvailTrendChart", availTrend.labels, availTrend.values, "Available Hours", false, "available");
+      renderBarTrend("perfAchTrendChart", achTrend.labels, achTrend.values, "Man Hours", false, "ach");
+      renderBarTrend("perfTdtTrendChart", tdtTrend.labels, tdtTrend.values, "Development Hours", false, "tdt");
+      renderBarTrend("perfEfhTrendChart", efhTrend.labels, efhTrend.values, "Effective Hours", false, "efh");
+      renderBarTrend("perfJaTrendChart", jaTrend.labels, jaTrend.values, "Job Availability", true, "ja");
+      renderBarTrend("perfJeTrendChart", jeTrend.labels, jeTrend.values, "Job Effectiveness", true, "je");
 
-      renderHorizontalBar("perfAvailAreaChart", buildMetricByArea(ts, "available"), "available", "Available Hours");
-      renderHorizontalBar("perfAchAreaChart", buildMetricByArea(ts, "ach"), "ach", "Man Hours");
-      renderHorizontalBar("perfTdtAreaChart", buildMetricByArea(ts, "tdt"), "tdt", "Development Hours");
-      renderHorizontalBar("perfEfhAreaChart", buildMetricByArea(ts, "efh"), "efh", "Effective Hours");
+      renderHorizontalBar("perfAvailAreaChart", buildMetricByArea(ts, "available"), "available", "Available Hours", false, "available");
+      renderHorizontalBar("perfAchAreaChart", buildMetricByArea(ts, "ach"), "ach", "Man Hours", false, "ach");
+      renderHorizontalBar("perfTdtAreaChart", buildMetricByArea(ts, "tdt"), "tdt", "Development Hours", false, "tdt");
+      renderHorizontalBar("perfEfhAreaChart", buildMetricByArea(ts, "efh"), "efh", "Effective Hours", false, "efh");
 
       const saArea = buildSaByArea(cases).map(x => ({ label: x.label, value: x.value }));
-      renderHorizontalBar("perfSaAreaChart", saArea, "value", "Qty SA");
+      renderHorizontalBar("perfSaAreaChart", saArea, "value", "Qty SA", false, "qty");
       renderAccuracyChart(cases);
 
       setPerfAsOf();
@@ -2716,13 +2930,22 @@ function startFastUpdateRealtime() {
     function wireActions() {
       document.getElementById("btnExportExcel")?.addEventListener("click", exportDashboardToExcel);
       document.getElementById("btnAjukanUpdate")?.addEventListener("click", refreshDashboardFromSupabase);
+      document.getElementById("btnBackToSa")?.addEventListener("click", () => {
+        location.hash = "sa";
+        setActiveSection("sa");
+      });
+      document.getElementById("saBody")?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-mechanic-detail]");
+        if (!btn) return;
+        openMechanicDetail(btn.getAttribute("data-mechanic-detail"));
+      });
     }
 
     function wireSearch() {
   document.getElementById("liveSearch")?.addEventListener("input", (e) => renderLiveJobs(e.target.value));
   document.getElementById("saSearch")?.addEventListener("input", (e) => renderSaTable(e.target.value));
   document.getElementById("tsSearch")?.addEventListener("input", (e) => renderTimesheetTable(e.target.value));
-  document.getElementById("caseSearch")?.addEventListener("input", (e) => renderCaseTable(e.target.value));
+  document.getElementById("mechanicDetailSearch")?.addEventListener("input", (e) => renderMechanicDetail(e.target.value));
 }
 
     async function loadAndRender(periodKey) {
@@ -2737,7 +2960,7 @@ renderLiveJobs(document.getElementById("liveSearch")?.value || "");
 renderFastUpdateAlerts();
 renderSaTable(document.getElementById("saSearch")?.value || "");
 renderTimesheetTable(document.getElementById("tsSearch")?.value || "");
-renderCaseTable(document.getElementById("caseSearch")?.value || "");
+renderMechanicDetail(document.getElementById("mechanicDetailSearch")?.value || "");
 renderDQ();
         setAlert("", "info");
       } catch (e) {
