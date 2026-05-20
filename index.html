@@ -1244,6 +1244,109 @@
       .mechanic-options-list{ max-height: 145px; }
     }
 
+
+    /* =========================================================
+       CREATE SA MOBILE SCROLL HARD FIX v2
+       Penyebab sebelumnya: <form> di dalam .modal-content belum menjadi flex
+       container, jadi .modal-body tidak benar-benar menjadi area scroll.
+       Fix ini membuat FORM sebagai flex column, lalu BODY menjadi satu-satunya
+       scroll area utama. List mekanik tidak lagi mengunci scroll modal.
+    ========================================================= */
+    @media (max-width: 768px){
+      body.modal-open{
+        overflow: hidden !important;
+        touch-action: none;
+      }
+
+      #createSaModal{
+        overflow: hidden !important;
+        height: 100dvh !important;
+      }
+
+      #createSaModal.show{
+        display: block !important;
+      }
+
+      #createSaModal .modal-dialog,
+      #createSaModal .modal-dialog.modal-dialog-centered{
+        width: 100% !important;
+        max-width: none !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: flex-end !important;
+        justify-content: center !important;
+        transform: none !important;
+        pointer-events: none;
+      }
+
+      #createSaModal .modal-content{
+        pointer-events: auto;
+        width: 100% !important;
+        height: 94dvh !important;
+        max-height: 94dvh !important;
+        border-radius: 24px 24px 0 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+      }
+
+      #createSaModal .modal-header{
+        flex: 0 0 auto !important;
+        min-height: 0 !important;
+      }
+
+      #createSaForm{
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+      }
+
+      #createSaModal .modal-body{
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow-y: scroll !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y !important;
+        padding-bottom: 24px !important;
+      }
+
+      #createSaModal .modal-footer{
+        flex: 0 0 auto !important;
+        position: relative !important;
+        z-index: 10;
+        background: #ffffff;
+        box-shadow: 0 -10px 24px rgba(15,23,42,.12);
+      }
+
+      /* Supaya saat swipe di area daftar mekanik, modal ikut turun/naik.
+         Bukan hanya daftar NRP yang bergerak. */
+      #createSaModal .mechanic-picker-box{
+        overflow: visible !important;
+      }
+
+      #createSaModal .mechanic-options-list{
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
+        -webkit-overflow-scrolling: auto !important;
+      }
+    }
+
+    @media (max-width: 420px){
+      #createSaModal .modal-content{
+        height: 95dvh !important;
+        max-height: 95dvh !important;
+      }
+    }
+
   </style>
 </head>
 
