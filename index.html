@@ -260,6 +260,20 @@
       height: 140px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(243,112,33,.12) 0%, rgba(243,112,33,0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .topbar > *{
+      position: relative;
+      z-index: 1;
+    }
+
+    /* PERIOD_SELECT_CLICK_FIX: dropdown periode tetap bisa diklik meski ada dekorasi topbar */
+    #periodSelect{
+      position: relative;
+      z-index: 5;
+      pointer-events: auto;
     }
     .pill{
       display:inline-flex;
@@ -322,6 +336,7 @@
       height: 100px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(243,112,33,.14) 0%, rgba(243,112,33,0) 72%);
+      pointer-events: none;
     }
     .summary-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
     .summary-label{ color: var(--textSoft); font-size: .88rem; margin-bottom: 8px; }
