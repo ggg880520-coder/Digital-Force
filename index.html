@@ -1170,6 +1170,7 @@
     const SA_RAW_TABLE = "sa_raw";
     const TS_RAW_TABLE = "timesheet_raw";
     const SA_JOBS_TABLE = "sa_jobs";
+    const SA_JOBS_READ_TABLE = "v_sa_jobs_synced";
     const FAST_UPDATE_LOG_TABLE = "fast_update_log";
 
     const SHEET_CSV_URL = (gid) =>
@@ -1623,7 +1624,9 @@ function liveStatusBadge(row) {
 }
 
 function getMechanicNameFromRow(row) {
-  return cleanCell(row?.mechanic_name)
+  return cleanCell(row?.mechanic_name_synced)
+    || cleanCell(row?.synced_mechanic_name)
+    || cleanCell(row?.mechanic_name)
     || cleanCell(row?.mechanicName)
     || cleanCell(row?.mechanic)
     || cleanCell(row?.nama_mekanik)
@@ -1733,10 +1736,28 @@ function refreshPeriodCachesFromState() {
 }
 
 async function fetchLiveJobs() {
-  const { data, error } = await supabase
-    .from(SA_JOBS_TABLE)
+  // Baca dari view v_sa_jobs_synced agar nama register Telegram sinkron berdasarkan NRP.
+  // Jika view belum tersedia/permission belum aktif, fallback otomatis ke tabel sa_jobs.
+  let data = null;
+  let error = null;
+
+  const viewRead = await supabase
+    .from(SA_JOBS_READ_TABLE)
     .select("*")
     .order("dispatch_time", { ascending: false });
+
+  if (viewRead.error) {
+    console.warn("Gagal membaca v_sa_jobs_synced, fallback ke sa_jobs:", viewRead.error);
+    const tableRead = await supabase
+      .from(SA_JOBS_TABLE)
+      .select("*")
+      .order("dispatch_time", { ascending: false });
+    data = tableRead.data;
+    error = tableRead.error;
+  } else {
+    data = viewRead.data;
+    error = null;
+  }
 
   if (error) throw error;
 
@@ -2102,9 +2123,16 @@ function getTimesheetOverviewEval(pct) {
         .sort((a, b) => String(a.mechanic_name || "").localeCompare(String(b.mechanic_name || "")));
     }
 
+    function isPlaceholderEmployeeRow(r) {
+      const sourceType = String(r?.source_type || r?.source || "").trim().toLowerCase();
+      const sourceSheet = String(r?.source_sheet || "").trim().toLowerCase();
+      const isFlagged = r?.is_placeholder === true || String(r?.is_placeholder || "").trim().toLowerCase() === "true";
+      return isFlagged || sourceType === "telegram_register" || sourceSheet === "telegram register";
+    }
+
     function buildCaseRows(saRows, periodKey) {
       return saRows
-        .filter(r => getSaPeriodKey(r) === periodKey)
+        .filter(r => getSaPeriodKey(r) === periodKey && !isPlaceholderEmployeeRow(r))
         .map(r => ({
           case_number: cleanCell(r.case_number),
           appointment_number: cleanCell(r.sa_number),
