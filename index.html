@@ -1736,7 +1736,7 @@ function refreshPeriodCachesFromState() {
 }
 
 async function fetchLiveJobs() {
-  // Baca dari view v_sa_jobs_synced agar nama register Telegram sinkron berdasarkan NRP.
+  // Baca dari view v_sa_jobs_synced agar nama Live SA mengikuti master raw berdasarkan NRP.
   // Jika view belum tersedia/permission belum aktif, fallback otomatis ke tabel sa_jobs.
   let data = null;
   let error = null;
