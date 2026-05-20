@@ -447,6 +447,54 @@
       background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.12);
     }
 
+
+    .live-status-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 900;
+      letter-spacing: .15px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+    .live-status-badge.status-dispatch{
+      background: rgba(239,68,68,.16);
+      color: #991b1b;
+      border-color: rgba(239,68,68,.24);
+    }
+    .live-status-badge.status-travel{
+      background: rgba(249,115,22,.18);
+      color: #9a3412;
+      border-color: rgba(249,115,22,.28);
+    }
+    .live-status-badge.status-progress{
+      background: rgba(234,179,8,.22);
+      color: #713f12;
+      border-color: rgba(234,179,8,.30);
+    }
+    .live-status-badge.status-completed{
+      background: rgba(34,197,94,.16);
+      color: #166534;
+      border-color: rgba(34,197,94,.24);
+    }
+    .live-status-badge.status-post{
+      background: rgba(99,102,241,.16);
+      color: #3730a3;
+      border-color: rgba(99,102,241,.24);
+    }
+    .live-status-badge.status-unknown{
+      background: rgba(100,116,139,.14);
+      color: #475569;
+      border-color: rgba(100,116,139,.20);
+    }
+    .live-status-badge .bi{
+      font-size: .82rem;
+    }
+
     .mechanic-link{
       border: 0;
       background: transparent;
@@ -797,7 +845,7 @@
     </div>
   </div>
   <div class="toolbar">
-    <input id="liveSearch" class="form-control form-control-sm searchbox" placeholder="Cari SA / NRP / site...">
+    <input id="liveSearch" class="form-control form-control-sm searchbox" placeholder="Cari SA / NRP / nama mekanik / site...">
   </div>
 
   <div class="card card-kpi">
@@ -811,6 +859,7 @@
             <tr>
               <th>SA</th>
               <th>NRP</th>
+              <th>Mekanik</th>
               <th>Job</th>
               <th>Site</th>
               <th>Status</th>
@@ -1179,6 +1228,7 @@
   timesheet: [],
   cases: [],
   liveJobs: [],
+  postedLiveJobs: [],
 fastUpdates: []
 };
 
@@ -1518,15 +1568,181 @@ async function fetchSheetRows(sheetName, gid) {
   return mapped;
 }
 
+function normalizeStatusText(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function isPostStatus(status) {
+  const s = normalizeStatusText(status);
+  return s === "POST" || s === "POST_ACTIVITY" || s === "POST_ACTIVITIES" || s === "POSTACTIVITY";
+}
+
+function getLiveStatusKey(row) {
+  const s = normalizeStatusText(row?.status);
+
+  if (isPostStatus(s)) return "post";
+  if (["COMPLETED", "COMPLETE", "DONE", "FINISH", "FINISHED"].includes(s)) return "completed";
+  if (["IN_PROGRESS", "INPROGRESS", "PROGRESS", "WORKING", "START_JOB"].includes(s)) return "progress";
+  if (["TRAVEL", "TRAVELLING", "TRAVELING", "ON_TRAVEL"].includes(s)) return "travel";
+  if (["DISPATCH", "DISPATCHED", "START", "OPEN", "CREATED"].includes(s)) return "dispatch";
+
+  // Fallback berdasarkan timestamp terakhir yang sudah terisi.
+  if (row?.completed_time) return "completed";
+  if (row?.inprogress_time) return "progress";
+  if (row?.travel_time) return "travel";
+  if (row?.dispatch_time) return "dispatch";
+
+  return "unknown";
+}
+
+function liveStatusLabel(row) {
+  const key = getLiveStatusKey(row);
+  if (key === "dispatch") return "Dispatch";
+  if (key === "travel") return "Travel";
+  if (key === "progress") return "In Progress";
+  if (key === "completed") return "Completed";
+  if (key === "post") return "Post";
+  return row?.status || "-";
+}
+
+function liveStatusIcon(key) {
+  if (key === "dispatch") return "bi-exclamation-triangle-fill";
+  if (key === "travel") return "bi-truck";
+  if (key === "progress") return "bi-tools";
+  if (key === "completed") return "bi-check-circle-fill";
+  if (key === "post") return "bi-send-check-fill";
+  return "bi-question-circle";
+}
+
+function liveStatusBadge(row) {
+  const key = getLiveStatusKey(row);
+  return `<span class="live-status-badge status-${key}"><i class="bi ${liveStatusIcon(key)}"></i>${escapeHtml(liveStatusLabel(row))}</span>`;
+}
+
+function getMechanicNameFromRow(row) {
+  return cleanCell(row?.mechanic_name)
+    || cleanCell(row?.mechanicName)
+    || cleanCell(row?.mechanic)
+    || cleanCell(row?.nama_mekanik)
+    || cleanCell(row?.nama)
+    || cleanCell(row?.name)
+    || cleanCell(row?.full_name)
+    || cleanCell(row?.employee_name)
+    || cleanCell(row?.telegram_name);
+}
+
+function findMechanicNameByNrp(nrp) {
+  const key = String(nrp || "").trim();
+  if (!key) return null;
+
+  const tsMatch = [
+    ...(cache.timesheet || []),
+    ...(syncState.tsRows || [])
+  ].find(r => String(r?.nrp || r?.NRP || "").trim() === key && (r?.mechanic_name || r?.Mechanic_Name || r?.service_resource));
+
+  return cleanCell(tsMatch?.mechanic_name)
+    || cleanCell(tsMatch?.Mechanic_Name)
+    || cleanCell(tsMatch?.service_resource)
+    || cleanCell(tsMatch?.Service_Resource)
+    || null;
+}
+
+function getLiveMechanicName(row) {
+  return getMechanicNameFromRow(row) || findMechanicNameByNrp(row?.nrp) || "-";
+}
+
+function getLiveSaId(row) {
+  return cleanCell(row?.sa_id)
+    || cleanCell(row?.sa_number)
+    || cleanCell(row?.appointment_number)
+    || cleanCell(row?.case_number)
+    || cleanCell(row?.job_id)
+    || cleanCell(row?.id)
+    || "-";
+}
+
+function getPostedJobPeriodKey(row) {
+  return monthKeyFromValue(row?.post_activity_time)
+    || monthKeyFromValue(row?.post_time)
+    || monthKeyFromValue(row?.completed_time)
+    || monthKeyFromValue(row?.updated_at)
+    || monthKeyFromValue(row?.dispatch_time)
+    || monthKeyFromValue(row?.created_at);
+}
+
+function mapPostedJobToSaRaw(row) {
+  const acc = cleanCell(row?.sa_accuracy)
+    || cleanCell(row?.staging_accuracy)
+    || cleanCell(row?.accuracy)
+    || cleanCell(row?.sa_staging_accuracy);
+
+  const submitted = cleanCell(row?.timesheet_submitted)
+    || cleanCell(row?.time_sheet_submitted)
+    || cleanCell(row?.post_activity_time)
+    || cleanCell(row?.post_time)
+    || cleanCell(row?.updated_at);
+
+  return {
+    case_number: cleanCell(row?.case_number) || getLiveSaId(row),
+    sa_number: cleanCell(row?.sa_number) || cleanCell(row?.appointment_number) || getLiveSaId(row),
+    actual_dispatched_date: cleanCell(row?.dispatch_time),
+    actual_travel_date: cleanCell(row?.travel_time),
+    actual_inprogress_date: cleanCell(row?.inprogress_time),
+    actual_completed_date: cleanCell(row?.completed_time) || submitted,
+    timesheet_submitted: submitted,
+    timesheet_approved: cleanCell(row?.timesheet_approved) || cleanCell(row?.time_sheet_approved),
+    case_description: cleanCell(row?.case_description) || cleanCell(row?.job_type),
+    service_area: cleanCell(row?.service_area) || cleanCell(row?.site),
+    mechanic_name: getLiveMechanicName(row),
+    scheduled_start: cleanCell(row?.scheduled_start) || cleanCell(row?.dispatch_time),
+    sa_accuracy: acc,
+    nrp: cleanCell(row?.nrp),
+    source_sheet: "Live SA Post",
+    source_type: "live_post"
+  };
+}
+
+function getCombinedSaSourceRows() {
+  const postedRows = (cache.postedLiveJobs || []).map(mapPostedJobToSaRaw);
+  const all = [...(syncState.saRows || []), ...postedRows];
+  const seen = new Set();
+
+  return all.filter(row => {
+    const key = [
+      cleanCell(row.case_number),
+      cleanCell(row.sa_number),
+      cleanCell(row.mechanic_name),
+      cleanCell(row.actual_completed_date),
+      cleanCell(row.scheduled_start)
+    ].join("|");
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function refreshPeriodCachesFromState() {
+  if (!cache.periodKey) return;
+  const combinedSaRows = getCombinedSaSourceRows();
+  cache.sa = buildSaAggregate(combinedSaRows, cache.periodKey);
+  cache.cases = buildCaseRows(combinedSaRows, cache.periodKey);
+}
+
 async function fetchLiveJobs() {
   const { data, error } = await supabase
     .from(SA_JOBS_TABLE)
     .select("*")
-    .neq("status", "POST_ACTIVITY")
     .order("dispatch_time", { ascending: false });
 
   if (error) throw error;
-  cache.liveJobs = data || [];
+
+  const rows = data || [];
+  cache.liveJobs = rows.filter(r => !isPostStatus(r?.status));
+  cache.postedLiveJobs = rows.filter(r => isPostStatus(r?.status));
 }
 
 function formatLiveTime(v) {
@@ -1549,20 +1765,22 @@ function renderLiveJobs(filter = "") {
     .filter(r => {
       if (!q) return true;
       return [
-        r.sa_id,
+        getLiveSaId(r),
         r.nrp,
+        getLiveMechanicName(r),
         r.job_type,
         r.site,
-        r.status
+        liveStatusLabel(r)
       ].some(v => String(v || "").toLowerCase().includes(q));
     })
     .map(r => `
       <tr>
-        <td class="mono">${cellHtml(r.sa_id)}</td>
+        <td class="mono">${cellHtml(getLiveSaId(r))}</td>
         <td class="mono">${cellHtml(r.nrp)}</td>
+        <td>${cellHtml(getLiveMechanicName(r))}</td>
         <td>${cellHtml(r.job_type)}</td>
         <td>${cellHtml(r.site)}</td>
-        <td><span class="badge bg-primary">${cellHtml(r.status)}</span></td>
+        <td>${liveStatusBadge(r)}</td>
         <td class="mono">${formatLiveTime(r.dispatch_time)}</td>
         <td class="mono">${formatLiveTime(r.travel_time)}</td>
         <td class="mono">${formatLiveTime(r.inprogress_time)}</td>
@@ -1572,7 +1790,7 @@ function renderLiveJobs(filter = "") {
     .join("");
 
   document.getElementById("liveSaBody").innerHTML =
-    rows || `<tr><td colspan="9" class="small-muted">Belum ada SA aktif.</td></tr>`;
+    rows || `<tr><td colspan="10" class="small-muted">Belum ada SA aktif.</td></tr>`;
 }
 
 let realtimeChannel = null;
@@ -1956,9 +2174,10 @@ function getTimesheetOverviewEval(pct) {
 
       cache.periodKey = periodKey;
       cache.periodDate = `${periodKey}-01`;
-      cache.sa = buildSaAggregate(syncState.saRows, periodKey);
+      const combinedSaRows = getCombinedSaSourceRows();
+      cache.sa = buildSaAggregate(combinedSaRows, periodKey);
       cache.timesheet = buildTimesheetRows(syncState.tsRows, periodKey);
-      cache.cases = buildCaseRows(syncState.saRows, periodKey);
+      cache.cases = buildCaseRows(combinedSaRows, periodKey);
     }
 
     // =========================
@@ -2670,18 +2889,27 @@ function startLiveSaRealtime() {
 
         if (payload.eventType === "DELETE") {
           removeLiveJob(payload.old);
+          cache.postedLiveJobs = (cache.postedLiveJobs || []).filter(j => getLiveSaId(j) !== getLiveSaId(payload.old));
         } else {
           const row = payload.new;
-          const status = String(row?.status || "").toUpperCase();
 
-          if (status === "POST_ACTIVITY") {
+          if (isPostStatus(row?.status)) {
             removeLiveJob(row);
+            const idx = (cache.postedLiveJobs || []).findIndex(j => getLiveSaId(j) === getLiveSaId(row));
+            if (idx >= 0) cache.postedLiveJobs[idx] = row;
+            else cache.postedLiveJobs.unshift(row);
           } else {
             upsertLiveJob(row);
+            cache.postedLiveJobs = (cache.postedLiveJobs || []).filter(j => getLiveSaId(j) !== getLiveSaId(row));
           }
         }
 
+        refreshPeriodCachesFromState();
+        renderOverview();
+        renderSaTable(document.getElementById("saSearch")?.value || "");
         renderLiveJobs(document.getElementById("liveSearch")?.value || "");
+        renderMechanicDetail(document.getElementById("mechanicDetailSearch")?.value || "");
+        renderDQ();
 
         const conn = document.getElementById("connStatus");
         if (conn) {
@@ -2951,8 +3179,8 @@ function startFastUpdateRealtime() {
     async function loadAndRender(periodKey) {
       setAlert(`Loading data period <b>${periodKey}</b>...`, "info");
       try {
-        await fetchPeriodData(periodKey);
-await fetchLiveJobs();
+        await fetchLiveJobs();
+await fetchPeriodData(periodKey);
 await fetchFastUpdates();
 
 renderOverview();
