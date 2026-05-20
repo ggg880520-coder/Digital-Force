@@ -760,6 +760,470 @@
       background-color: rgba(255,255,255,.92);
     }
 
+
+    /* =========================================================
+       MOBILE UX FINAL POLISH
+       Fokus: tampilan Android/iPhone lebih ringkas, bersih,
+       navigasi bawah, tabel menjadi card, modal create SA rapi.
+       Tidak mengubah fungsi JavaScript yang sudah ada.
+    ========================================================= */
+    @media (max-width: 768px){
+      :root{
+        --mobileRadius: 18px;
+        --mobileShadow: 0 10px 26px rgba(2, 8, 23, .18);
+      }
+
+      html{ scroll-padding-bottom: 92px; }
+      body{
+        min-height: 100%;
+        background-attachment: scroll;
+        background-position: center top;
+        font-size: 14px;
+        overflow-x: hidden;
+      }
+
+      .app-header{
+        position: sticky;
+        top: 0;
+        z-index: 1050;
+        border-bottom: 1px solid rgba(15,23,42,.08);
+      }
+
+      .header-top{
+        min-height: 74px;
+        padding: 10px 14px 9px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .header-left{ gap: 5px; min-width: 0; }
+      .header-logo-main{
+        width: 190px;
+        max-width: 64vw;
+      }
+      .header-title{
+        font-size: .58rem;
+        letter-spacing: 1.55px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 70vw;
+      }
+
+      .header-right{
+        min-width: 0;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .header-logo-small{ height: 38px; }
+      .header-logo-wide{ height: 28px; max-width: 92px; }
+
+      /* Bottom navigation mobile */
+      .main-nav{
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: calc(10px + env(safe-area-inset-bottom));
+        z-index: 1100;
+        min-height: 64px;
+        padding: 8px;
+        border: 1px solid rgba(255,209,0,.35);
+        border-bottom: 1px solid rgba(255,209,0,.35);
+        border-radius: 24px;
+        box-shadow: 0 18px 34px rgba(0,0,0,.38);
+        background: rgba(10, 10, 10, .96);
+        backdrop-filter: blur(12px);
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .main-nav::-webkit-scrollbar{ display:none; }
+      .main-nav .nav-spacer,
+      .main-nav .nav-status{ display:none !important; }
+
+      .main-nav a,
+      .main-nav .nav-action{
+        flex: 0 0 auto;
+        min-width: 72px;
+        min-height: 48px;
+        padding: 7px 10px;
+        border-radius: 18px;
+        font-size: .63rem;
+        line-height: 1.05;
+        letter-spacing: .15px;
+        display: inline-flex;
+        flex-direction: column;
+        gap: 3px;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .main-nav a::before,
+      #btnAjukanUpdate::before,
+      #btnCreateSa::before{
+        font-family: "bootstrap-icons";
+        font-size: 1.05rem;
+        line-height: 1;
+        font-weight: 400;
+      }
+      .main-nav a[data-section="overview"]::before{ content:"\F3FD"; }
+      .main-nav a[data-section="live"]::before{ content:"\F5D7"; }
+      .main-nav a[data-section="sa"]::before{ content:"\F4CB"; }
+      .main-nav a[data-section="timesheet"]::before{ content:"\F26B"; }
+      .main-nav a[data-section="dq"]::before{ content:"\F2E9"; }
+      #btnAjukanUpdate::before{ content:"\F116"; }
+      #btnCreateSa::before{ content:"\F4FA"; }
+
+      .nav-action-primary{
+        background:#ffd100;
+        color:#000;
+        border-color:#ffd100;
+      }
+      .nav-action-outline{
+        background: rgba(255,209,0,.10);
+        color:#ffd100;
+        border-color: rgba(255,209,0,.55);
+      }
+
+      .content{
+        padding: 12px 10px 104px;
+      }
+
+      .topbar{
+        border-radius: var(--mobileRadius);
+        padding: 13px 13px;
+        margin-bottom: 12px !important;
+      }
+      .topbar .d-flex.flex-wrap.align-items-center.justify-content-between{
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      #pageTitle{
+        font-size: 1.02rem !important;
+        line-height: 1.15;
+      }
+      #pageSubtitle{
+        font-size: .78rem;
+        line-height: 1.35;
+      }
+      .topbar .d-flex.align-items-center.gap-2:last-child{
+        width: 100%;
+        justify-content: space-between;
+        background: rgba(255,255,255,.7);
+        border: 1px solid rgba(15,23,42,.06);
+        border-radius: 14px;
+        padding: 7px 9px;
+      }
+      #periodSelect{
+        min-width: 128px !important;
+        max-width: 48vw;
+        font-size: .82rem;
+        border-radius: 12px;
+      }
+      #connStatus{ font-size: .74rem; }
+
+      .summary-grid,
+      .kpi-grid,
+      .detail-summary-grid,
+      .perf-grid{
+        gap: 10px;
+      }
+      .summary-card,
+      .card-kpi,
+      .metric-box,
+      .detail-title-box,
+      .perf-card{
+        border-radius: var(--mobileRadius);
+        box-shadow: var(--mobileShadow);
+      }
+      .summary-card{ padding: 13px; }
+      .summary-value{ font-size: 1.55rem; }
+      .summary-note{ font-size: .75rem; }
+      .summary-icon{ width: 36px; height: 36px; border-radius: 12px; }
+      .card-kpi .card-body{ padding: 13px; }
+      .metric-box{ padding: 11px 12px; }
+      .fs-5{ font-size: 1rem !important; }
+      .small-muted{ font-size: .78rem; }
+
+      .toolbar{
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .searchbox,
+      .toolbar .form-control{
+        max-width: none;
+        width: 100%;
+        min-height: 40px;
+        border-radius: 14px;
+        background: rgba(255,255,255,.94);
+      }
+      .form-control,
+      .form-select,
+      .btn{
+        min-height: 40px;
+      }
+
+      /* Mobile table as clean cards */
+      .table-responsive{
+        border-radius: 16px;
+        overflow: visible;
+      }
+      #sec-live table,
+      #sec-sa table,
+      #sec-timesheet table,
+      #sec-mechanic-detail table,
+      #caseMiniBody.closest-table,
+      #sec-overview .table{
+        border-collapse: separate;
+      }
+      #sec-live table thead,
+      #sec-sa table thead,
+      #sec-timesheet table thead,
+      #sec-mechanic-detail table thead,
+      #sec-overview .table thead{ display:none; }
+
+      #sec-live table,
+      #sec-live tbody,
+      #sec-live tr,
+      #sec-live td,
+      #sec-sa table,
+      #sec-sa tbody,
+      #sec-sa tr,
+      #sec-sa td,
+      #sec-timesheet table,
+      #sec-timesheet tbody,
+      #sec-timesheet tr,
+      #sec-timesheet td,
+      #sec-mechanic-detail table,
+      #sec-mechanic-detail tbody,
+      #sec-mechanic-detail tr,
+      #sec-mechanic-detail td,
+      #sec-overview .table,
+      #sec-overview .table tbody,
+      #sec-overview .table tr,
+      #sec-overview .table td{
+        display:block;
+        width:100%;
+      }
+
+      #sec-live tbody tr,
+      #sec-sa tbody tr,
+      #sec-timesheet tbody tr,
+      #sec-mechanic-detail tbody tr,
+      #sec-overview .table tbody tr{
+        margin: 0 0 10px;
+        padding: 11px 12px;
+        border-radius: 16px;
+        background: rgba(255,255,255,.95) !important;
+        border: 1px solid rgba(15,23,42,.08);
+        box-shadow: 0 8px 18px rgba(15,23,42,.08);
+      }
+      #sec-live tbody td,
+      #sec-sa tbody td,
+      #sec-timesheet tbody td,
+      #sec-mechanic-detail tbody td,
+      #sec-overview .table tbody td{
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap: 12px;
+        padding: 7px 0;
+        border:0;
+        border-bottom: 1px dashed rgba(15,23,42,.08);
+        text-align:right !important;
+        white-space: normal;
+        word-break: break-word;
+      }
+      #sec-live tbody td:last-child,
+      #sec-sa tbody td:last-child,
+      #sec-timesheet tbody td:last-child,
+      #sec-mechanic-detail tbody td:last-child,
+      #sec-overview .table tbody td:last-child{ border-bottom:0; }
+      #sec-live tbody td::before,
+      #sec-sa tbody td::before,
+      #sec-timesheet tbody td::before,
+      #sec-mechanic-detail tbody td::before,
+      #sec-overview .table tbody td::before{
+        flex: 0 0 42%;
+        text-align:left;
+        color:#7a2f07;
+        font-weight:800;
+        font-size:.76rem;
+      }
+
+      /* Labels per table */
+      #sec-live tbody td:nth-child(1)::before{ content:"SA"; }
+      #sec-live tbody td:nth-child(2)::before{ content:"NRP"; }
+      #sec-live tbody td:nth-child(3)::before{ content:"Mekanik"; }
+      #sec-live tbody td:nth-child(4)::before{ content:"Job"; }
+      #sec-live tbody td:nth-child(5)::before{ content:"Site"; }
+      #sec-live tbody td:nth-child(6)::before{ content:"Status"; }
+      #sec-live tbody td:nth-child(7)::before{ content:"Dispatch"; }
+      #sec-live tbody td:nth-child(8)::before{ content:"Travel"; }
+      #sec-live tbody td:nth-child(9)::before{ content:"In Progress"; }
+      #sec-live tbody td:nth-child(10)::before{ content:"Completed"; }
+
+      #sec-sa tbody td:nth-child(1)::before{ content:"Mekanik"; }
+      #sec-sa tbody td:nth-child(2)::before{ content:"Accurate"; }
+      #sec-sa tbody td:nth-child(3)::before{ content:"Not Accurate"; }
+      #sec-sa tbody td:nth-child(4)::before{ content:"Ratio"; }
+      #sec-sa tbody td:nth-child(5)::before{ content:"Bintang"; }
+      #sec-sa tbody td:nth-child(6)::before{ content:"Status"; }
+
+      #sec-timesheet tbody td:nth-child(1)::before{ content:"NRP"; }
+      #sec-timesheet tbody td:nth-child(2)::before{ content:"Mekanik"; }
+      #sec-timesheet tbody td:nth-child(3)::before{ content:"Avail"; }
+      #sec-timesheet tbody td:nth-child(4)::before{ content:"Qty SA"; }
+      #sec-timesheet tbody td:nth-child(5)::before{ content:"ACH"; }
+      #sec-timesheet tbody td:nth-child(6)::before{ content:"TDT"; }
+      #sec-timesheet tbody td:nth-child(7)::before{ content:"EFH"; }
+      #sec-timesheet tbody td:nth-child(8)::before{ content:"JA%"; }
+      #sec-timesheet tbody td:nth-child(9)::before{ content:"JE%"; }
+      #sec-timesheet tbody td:nth-child(10)::before{ content:"Lampiran"; }
+
+      #sec-mechanic-detail tbody td:nth-child(1)::before{ content:"Case"; }
+      #sec-mechanic-detail tbody td:nth-child(2)::before{ content:"Appointment"; }
+      #sec-mechanic-detail tbody td:nth-child(3)::before{ content:"Area"; }
+      #sec-mechanic-detail tbody td:nth-child(4)::before{ content:"Scheduled"; }
+      #sec-mechanic-detail tbody td:nth-child(5)::before{ content:"Completed"; }
+      #sec-mechanic-detail tbody td:nth-child(6)::before{ content:"Submitted"; }
+      #sec-mechanic-detail tbody td:nth-child(7)::before{ content:"Approved"; }
+      #sec-mechanic-detail tbody td:nth-child(8)::before{ content:"Lead Input"; }
+      #sec-mechanic-detail tbody td:nth-child(9)::before{ content:"Accuracy"; }
+
+      #sec-overview .table tbody td:nth-child(1)::before{ content:"Case"; }
+      #sec-overview .table tbody td:nth-child(2)::before{ content:"Mekanik"; }
+      #sec-overview .table tbody td:nth-child(3)::before{ content:"Area"; }
+      #sec-overview .table tbody td:nth-child(4)::before{ content:"Accuracy"; }
+
+      .mechanic-link{
+        justify-content:flex-end;
+        max-width: 100%;
+        text-align:right;
+      }
+      .badge-eval,
+      .live-status-badge,
+      .badge{
+        font-size: .7rem;
+        padding: 5px 8px;
+      }
+
+      /* Live alert filter */
+      .fast-update-filter{
+        width: 100%;
+        justify-content: space-between;
+        background: rgba(255,255,255,.72);
+        border: 1px solid rgba(15,23,42,.06);
+        padding: 8px;
+        border-radius: 14px;
+      }
+      .fast-update-filter .form-select{
+        min-width: 130px;
+        flex: 1;
+      }
+      #fastUpdateCountBadge{ margin-left:auto; }
+
+      /* Detail page */
+      .detail-title-box .detail-name{
+        font-size: 1.08rem;
+        line-height: 1.25;
+      }
+      #btnBackToSa{
+        width: 100%;
+        justify-content:center;
+      }
+
+      /* Performance chart cards */
+      .perf-card,
+      .perf-card.perf-small{
+        grid-column: span 12 !important;
+        min-height: 190px;
+        border-radius: 16px;
+      }
+      .perf-head{ padding: 10px 12px 4px !important; }
+      .perf-title{ font-size: .88rem; }
+      .perf-subtitle{ font-size: .68rem; }
+      .perf-body{ min-height: 150px; padding: 6px 10px; }
+      .perf-body canvas{ max-height: 178px; }
+      .perf-kpi-value{
+        font-size: clamp(2.2rem, 14vw, 3.5rem);
+        padding: 20px 4px 14px;
+      }
+
+      /* Create SA modal as mobile sheet */
+      .modal-dialog{
+        margin: 0;
+        max-width: none;
+        width: 100%;
+        min-height: 100%;
+        display:flex;
+        align-items:flex-end;
+      }
+      .modal-content{
+        border-radius: 24px 24px 0 0 !important;
+        max-height: 92vh;
+        overflow: hidden;
+      }
+      .modal-header{
+        padding: 13px 16px;
+      }
+      .modal-title{ font-size: 1rem; }
+      .modal-body{
+        padding: 14px 16px;
+        overflow-y:auto;
+      }
+      .modal-footer{
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+        box-shadow: 0 -8px 18px rgba(15,23,42,.08);
+      }
+      .modal-footer .btn{
+        flex: 1;
+        border-radius: 999px;
+      }
+      .create-sa-id-box{
+        align-items:flex-start;
+        flex-direction:column;
+        border-radius: 16px;
+      }
+      #btnRegenerateWebSaId{ width:100%; }
+      .mechanic-options-list{ max-height: 260px; }
+      .mechanic-option-item{ padding: 11px 10px; }
+      .selected-mechanic-chip{ font-size:.74rem; }
+
+      /* Keep desktop-only spacious elements compact */
+      .row.g-3{ --bs-gutter-y: .65rem; --bs-gutter-x: .65rem; }
+      .alert{ border-radius: 14px; font-size:.82rem; }
+    }
+
+    @media (max-width: 420px){
+      .header-logo-main{ width: 168px; }
+      .header-logo-small{ height: 32px; }
+      .header-logo-wide{ display:none; }
+      .header-title{ font-size:.53rem; max-width: 78vw; }
+      .main-nav a,
+      .main-nav .nav-action{
+        min-width: 66px;
+        font-size: .58rem;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .content{ padding-left: 8px; padding-right: 8px; }
+      .topbar{ padding: 12px; }
+      #pageTitle{ font-size: .98rem !important; }
+      #periodSelect{ max-width: 52vw; }
+      #sec-live tbody td::before,
+      #sec-sa tbody td::before,
+      #sec-timesheet tbody td::before,
+      #sec-mechanic-detail tbody td::before,
+      #sec-overview .table tbody td::before{ flex-basis: 39%; }
+    }
+
   </style>
 </head>
 
