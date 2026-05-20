@@ -474,8 +474,8 @@
 
       <div class="nav-spacer"></div>
 
-      <button type="button" class="nav-action nav-action-primary">AJUKAN UPDATE</button>
-      <button type="button" class="nav-action nav-action-outline">EXPORT EXCEL</button>
+      <button type="button" id="btnAjukanUpdate" class="nav-action nav-action-primary">AJUKAN UPDATE</button>
+      <button type="button" id="btnExportExcel" class="nav-action nav-action-outline">EXPORT EXCEL</button>
 
       <div class="nav-status">
         <span class="status-dot"></span>
@@ -830,17 +830,21 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
     // =========================
-    // Supabase Config (hardcoded)
+    // Supabase Config
+    // Frontend hanya memakai ANON KEY untuk membaca data.
+    // Proses sinkronisasi Google Sheet -> Supabase dilakukan lewat sync.js/server.
     // =========================
     const SUPABASE_URL = "https://wqgkwbtsfrmpgwxhaybz.supabase.co";
-    const SUPABASE_ANON_KEY ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZ2t3YnRzZnJtcGd3eGhheWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODQ2MzAsImV4cCI6MjA4ODE2MDYzMH0.a4mN97nAiWqHhuhKJGNsmM1qukUdesUCThor-JKmirA";
-    const SPREADSHEET_ID= "13NWbHrHsyNcDaA1xe2OZPkyoNDuPHO6gLG2Pud3e6hA"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZ2t3YnRzZnJtcGd3eGhheWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODQ2MzAsImV4cCI6MjA4ODE2MDYzMH0.a4mN97nAiWqHhuhKJGNsmM1qukUdesUCThor-JKmirA";
+    const SPREADSHEET_ID = "13NWbHrHsyNcDaA1xe2OZPkyoNDuPHO6gLG2Pud3e6hA";
+    const BROWSER_WRITE_SYNC_ENABLED = false;
 
     const SA_SHEET_NAME = "Rasio SA";
     const TS_SHEET_NAME = "TimeSheet";
@@ -851,10 +855,10 @@
     const SA_RAW_TABLE = "sa_raw";
     const TS_RAW_TABLE = "timesheet_raw";
     const SA_JOBS_TABLE = "sa_jobs";
-const FAST_UPDATE_LOG_TABLE = "fast_update_log";
+    const FAST_UPDATE_LOG_TABLE = "fast_update_log";
 
     const SHEET_CSV_URL = (gid) =>
-      `https://docs.google.com/spreadsheets/d/13NWbHrHsyNcDaA1xe2OZPkyoNDuPHO6gLG2Pud3e6hA/export?format=csv&gid=${gid}`;
+      `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${gid}`;
 
     function setAlert(html, type = "warning") {
       const box = document.getElementById("alertBox");
@@ -959,6 +963,27 @@ fastUpdates: []
           const n = Number(val);
           if (!Number.isFinite(n)) return null;
           return n <= 1 ? n * 100 : n;
+        }
+
+        function escapeHtml(value) {
+          return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
+
+        function cellHtml(value, fallback = "-") {
+          const s = String(value ?? "").trim();
+          return s ? escapeHtml(s) : fallback;
+        }
+
+        function safeFileNamePart(value) {
+          return String(value || "dashboard")
+            .replace(/[^a-z0-9_-]+/gi, "-")
+            .replace(/^-+|-+$/g, "")
+            .toLowerCase() || "dashboard";
         }
 
     function cleanCell(v) {
@@ -1260,11 +1285,11 @@ function renderLiveJobs(filter = "") {
     })
     .map(r => `
       <tr>
-        <td class="mono">${r.sa_id || "-"}</td>
-        <td class="mono">${r.nrp || "-"}</td>
-        <td>${r.job_type || "-"}</td>
-        <td>${r.site || "-"}</td>
-        <td><span class="badge bg-primary">${r.status || "-"}</span></td>
+        <td class="mono">${cellHtml(r.sa_id)}</td>
+        <td class="mono">${cellHtml(r.nrp)}</td>
+        <td>${cellHtml(r.job_type)}</td>
+        <td>${cellHtml(r.site)}</td>
+        <td><span class="badge bg-primary">${cellHtml(r.status)}</span></td>
         <td class="mono">${formatLiveTime(r.dispatch_time)}</td>
         <td class="mono">${formatLiveTime(r.travel_time)}</td>
         <td class="mono">${formatLiveTime(r.inprogress_time)}</td>
@@ -1313,7 +1338,7 @@ function scheduleRealtimeRefresh() {
 
       document.getElementById("connStatus").textContent = "realtime updated";
     } catch (e) {
-      setAlert(`Realtime refresh gagal: <b>${e?.message || e}</b>`, "danger");
+      setAlert(`Realtime refresh gagal: <b>${escapeHtml(e?.message || e)}</b>`, "danger");
     }
   }, 500);
 }
@@ -1325,19 +1350,7 @@ function startRealtime() {
   }
 
   realtimeChannel = supabase
-    .channel("dashboard_realtime")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: SA_JOBS_TABLE
-      },
-      payload => {
-        console.log("Realtime sa_jobs update:", payload);
-        scheduleRealtimeRefresh();
-      }
-    )
+    .channel("dashboard_raw_data_realtime")
     .on(
       "postgres_changes",
       {
@@ -1363,7 +1376,7 @@ function startRealtime() {
       }
     )
     .subscribe(status => {
-      console.log("Realtime status:", status);
+      console.log("Realtime raw data status:", status);
       document.getElementById("connStatus").textContent =
         status === "SUBSCRIBED" ? "sheet + supabase realtime connected" : status;
     });
@@ -1637,28 +1650,18 @@ function getTimesheetOverviewEval(pct) {
 
       syncState.syncing = true;
       try {
-        const [saRows, tsRows] = await Promise.all([
-          fetchSheetRows(SA_SHEET_NAME, SA_SHEET_GID),
-          fetchSheetRows(TS_SHEET_NAME, TS_SHEET_GID)
-        ]);
-        console.log("DEBUG SA first row canonical:", saRows[0]);
-        console.log("DEBUG TS first row canonical:", tsRows[0]);
-        console.log("DEBUG periods preview:", buildPeriods(saRows, tsRows));
+        if (BROWSER_WRITE_SYNC_ENABLED) {
+          const [saRows, tsRows] = await Promise.all([
+            fetchSheetRows(SA_SHEET_NAME, SA_SHEET_GID),
+            fetchSheetRows(TS_SHEET_NAME, TS_SHEET_GID)
+          ]);
 
-        const saDbRows = saRows.map(mapSaRowForDb);
-        const tsDbRows = tsRows.map(mapTimesheetRowForDb);
+          const saDbRows = saRows.map(mapSaRowForDb);
+          const tsDbRows = tsRows.map(mapTimesheetRowForDb);
 
-        await replaceRowsBySource(
-          SA_RAW_TABLE,
-          saDbRows,
-          SA_SHEET_NAME
-        );
-
-        await replaceRowsBySource(
-          TS_RAW_TABLE,
-          tsDbRows,
-          TS_SHEET_NAME
-        );
+          await replaceRowsBySource(SA_RAW_TABLE, saDbRows, SA_SHEET_NAME);
+          await replaceRowsBySource(TS_RAW_TABLE, tsDbRows, TS_SHEET_NAME);
+        }
 
         await loadRawRowsFromSupabase();
         syncState.lastSyncAt = new Date().toISOString();
@@ -1813,9 +1816,9 @@ function getTimesheetOverviewEval(pct) {
 
       const mini = cases.slice(0, 5).map(r => `
         <tr>
-          <td class="mono">${r.case_number || "-"}</td>
-          <td>${r.mechanic_name || "-"}</td>
-          <td>${r.service_area || "-"}</td>
+          <td class="mono">${cellHtml(r.case_number)}</td>
+          <td>${cellHtml(r.mechanic_name)}</td>
+          <td>${cellHtml(r.service_area)}</td>
           <td>${
             Number(r.sa_staging_accuracy) === 1
               ? `<span class="badge bg-success">Accurate</span>`
@@ -1842,9 +1845,9 @@ function getTimesheetOverviewEval(pct) {
 
           return `
             <tr>
-              <td>${r.mechanic_name || "-"}</td>
-              <td class="text-end mono">${r.accurate_case ?? 0}</td>
-              <td class="text-end mono">${r.not_accurate_case ?? 0}${(r.not_accurate_case ?? 0) > 0 ? `<span class="badge bg-warning text-dark ms-2">cek</span>` : ""}</td>
+              <td>${cellHtml(r.mechanic_name)}</td>
+              <td class="text-end mono">${formatNumber(r.accurate_case ?? 0)}</td>
+              <td class="text-end mono">${formatNumber(r.not_accurate_case ?? 0)}${(r.not_accurate_case ?? 0) > 0 ? `<span class="badge bg-warning text-dark ms-2">cek</span>` : ""}</td>
               <td class="text-end mono">${formatPercent(Number(r.ratio_pct) || 0, 1)}</td>
               <td>${evalRes.stars === null ? "-" : starHtml(evalRes.stars, 3)}</td>
               <td>${badgeEval(evalRes.kind, evalRes.status)}</td>
@@ -1871,15 +1874,15 @@ function getTimesheetOverviewEval(pct) {
         .map(r => {
           return `
             <tr>
-              <td class="mono">${r.nrp || "-"}</td>
-              <td>${r.mechanic_name || "-"}</td>
-              <td class="text-end mono">${r.available_hour ?? "-"}</td>
-              <td class="text-end mono">${r.sa_count ?? "-"}</td>
-              <td class="text-end mono">${r.ach ?? "-"}</td>
-              <td class="text-end mono">${r.tdt ?? "-"}</td>
-              <td class="text-end mono">${r.efh ?? "-"}</td>
-              <td class="text-end mono">${r.ja ?? "-"}</td>
-              <td class="text-end mono">${r.je ?? "-"}</td>
+              <td class="mono">${cellHtml(r.nrp)}</td>
+              <td>${cellHtml(r.mechanic_name)}</td>
+              <td class="text-end mono">${formatNum(r.available_hour, 1)}</td>
+              <td class="text-end mono">${formatNumber(r.sa_count)}</td>
+              <td class="text-end mono">${formatNum(r.ach, 1)}</td>
+              <td class="text-end mono">${formatNum(r.tdt, 1)}</td>
+              <td class="text-end mono">${formatNum(r.efh, 1)}</td>
+              <td class="text-end mono">${formatNum(r.ja, 1)}</td>
+              <td class="text-end mono">${formatNum(r.je, 1)}</td>
               <td>${badgeEval("ok", "Terbaca")}</td>
             </tr>
           `;
@@ -1908,10 +1911,10 @@ function getTimesheetOverviewEval(pct) {
         })
         .map(r => `
           <tr>
-            <td class="mono">${r.case_number || "-"}</td>
-            <td class="mono">${r.appointment_number || "-"}</td>
-            <td>${r.mechanic_name || "-"}</td>
-            <td>${r.service_area || "-"}</td>
+            <td class="mono">${cellHtml(r.case_number)}</td>
+            <td class="mono">${cellHtml(r.appointment_number)}</td>
+            <td>${cellHtml(r.mechanic_name)}</td>
+            <td>${cellHtml(r.service_area)}</td>
             <td class="mono">${formatDateTimeID(r.scheduled_start_at)}</td>
             <td class="mono">${formatDateTimeID(r.time_sheet_submitted_at)}</td>
             <td class="mono">${formatDateTimeID(r.time_sheet_approved_at)}</td>
@@ -2123,8 +2126,8 @@ function renderFastUpdateAlerts() {
   }
 
   list.innerHTML = rows.map(r => {
-    const toStatus = normalizeStatusLabel(r.to_status);
-    const fromStatus = normalizeStatusLabel(r.from_status);
+    const toStatus = cellHtml(normalizeStatusLabel(r.to_status));
+    const fromStatus = cellHtml(normalizeStatusLabel(r.from_status));
     const actual = Number(r.actual_minutes ?? 0);
     const minimum = Number(r.minimum_minutes ?? 0);
 
@@ -2137,9 +2140,9 @@ function renderFastUpdateAlerts() {
           Baru <b>${actual} menit</b> sejak <b>${fromStatus}</b>.
         </div>
         <div class="small mt-1">
-          SA: <span class="mono">${r.sa_id || "-"}</span>
+          SA: <span class="mono">${cellHtml(r.sa_id)}</span>
           &nbsp;|&nbsp;
-          NRP: <span class="mono">${r.nrp || "-"}</span>
+          NRP: <span class="mono">${cellHtml(r.nrp)}</span>
           &nbsp;|&nbsp;
           Waktu: <span class="mono">${formatFastUpdateTime(r.clicked_at)}</span>
         </div>
@@ -2175,6 +2178,106 @@ function startFastUpdateRealtime() {
     });
 }
 
+
+    function buildDashboardExportSheets() {
+      const sa = cache.sa || [];
+      const ts = cache.timesheet || [];
+      const cases = cache.cases || [];
+      const tsLead = getTimesheetLeadStats(cases);
+      const saValid = sa.filter(x => Number.isFinite(Number(x.ratio_pct)));
+      const saAvg = saValid.length
+        ? saValid.reduce((a, x) => a + Number(x.ratio_pct || 0), 0) / saValid.length
+        : null;
+
+      return {
+        overview: [
+          { Indikator: "Periode", Nilai: cache.periodKey || "-" },
+          { Indikator: "Total Case", Nilai: cases.length },
+          { Indikator: "Rata-rata Rasio SA", Nilai: saAvg == null ? "-" : `${saAvg.toFixed(1)}%` },
+          { Indikator: "Timesheet < 3 Hari", Nilai: tsLead.pct == null ? "-" : `${tsLead.ontime}/${tsLead.total} (${tsLead.pct.toFixed(1)}%)` },
+          { Indikator: "Total Available Hours", Nilai: ts.reduce((a, x) => a + (Number(x.available_hour) || 0), 0) },
+          { Indikator: "Total Qty SA", Nilai: ts.reduce((a, x) => a + (Number(x.sa_count) || 0), 0) },
+          { Indikator: "Exported At", Nilai: new Date().toLocaleString("id-ID") }
+        ],
+        rasioSa: sa.map(r => ({
+          Mekanik: r.mechanic_name || "-",
+          Accurate: Number(r.accurate_case) || 0,
+          Not_Accurate: Number(r.not_accurate_case) || 0,
+          Ratio: Number.isFinite(Number(r.ratio_pct)) ? `${Number(r.ratio_pct).toFixed(1)}%` : "-"
+        })),
+        timesheet: ts.map(r => ({
+          NRP: r.nrp || "-",
+          Mekanik: r.mechanic_name || "-",
+          Available_Hours: r.available_hour ?? "-",
+          Qty_SA: r.sa_count ?? "-",
+          ACH: r.ach ?? "-",
+          TDT: r.tdt ?? "-",
+          EFH: r.efh ?? "-",
+          JA: r.ja ?? "-",
+          JE: r.je ?? "-"
+        })),
+        detailSa: cases.map(r => ({
+          Case: r.case_number || "-",
+          Appointment: r.appointment_number || "-",
+          Mekanik: r.mechanic_name || "-",
+          Area: r.service_area || "-",
+          Scheduled_Start: formatDateTimeID(r.scheduled_start_at),
+          Submitted: formatDateTimeID(r.time_sheet_submitted_at),
+          Approved: formatDateTimeID(r.time_sheet_approved_at),
+          Accuracy: Number(r.sa_staging_accuracy) === 1 ? "Accurate" : Number(r.sa_staging_accuracy) === 0 ? "Not Accurate" : "-"
+        }))
+      };
+    }
+
+    function exportDashboardToExcel() {
+      if (!window.XLSX) {
+        setAlert("Library export Excel belum terbaca. Periksa koneksi CDN XLSX.", "danger");
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const sheets = buildDashboardExportSheets();
+
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheets.overview), "Overview");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheets.rasioSa), "Rasio SA");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheets.timesheet), "Timesheet");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheets.detailSa), "Detail SA");
+
+      const filename = `sangkulirang-dashboard-${safeFileNamePart(cache.periodKey)}.xlsx`;
+      XLSX.writeFile(wb, filename);
+    }
+
+    async function refreshDashboardFromSupabase() {
+      const select = document.getElementById("periodSelect");
+      const current = select?.value || cache.periodKey;
+      setAlert("Mengambil ulang data terbaru dari Supabase...", "info");
+
+      try {
+        syncState.loaded = false;
+        await ensureSheetSynced(true);
+        const periods = syncState.periods || [];
+        const keys = periods.map(p => p.period_key);
+        const nextPeriod = current && keys.includes(current) ? current : periods[0]?.period_key;
+
+        if (select) {
+          select.innerHTML = periods
+            .map(p => `<option value="${cellHtml(p.period_key)}" ${p.period_key === nextPeriod ? "selected" : ""}>${cellHtml(p.period_label || p.period_key)}</option>`)
+            .join("");
+          if (nextPeriod) select.value = nextPeriod;
+        }
+
+        if (nextPeriod) await loadAndRender(nextPeriod);
+        setAlert("Data berhasil di-refresh dari Supabase. Untuk menarik data terbaru dari Google Sheet, jalankan <b>npm run sync</b> pada server/terminal.", "success");
+      } catch (e) {
+        setAlert(`Gagal refresh data: <b>${escapeHtml(e?.message || e)}</b>`, "danger");
+      }
+    }
+
+    function wireActions() {
+      document.getElementById("btnExportExcel")?.addEventListener("click", exportDashboardToExcel);
+      document.getElementById("btnAjukanUpdate")?.addEventListener("click", refreshDashboardFromSupabase);
+    }
+
     function wireSearch() {
   document.getElementById("liveSearch")?.addEventListener("input", (e) => renderLiveJobs(e.target.value));
   document.getElementById("saSearch")?.addEventListener("input", (e) => renderSaTable(e.target.value));
@@ -2198,7 +2301,7 @@ renderCaseTable(document.getElementById("caseSearch")?.value || "");
 renderDQ();
         setAlert("", "info");
       } catch (e) {
-        setAlert(e.message || String(e), "danger");
+        setAlert(escapeHtml(e.message || String(e)), "danger");
       }
     }
 
@@ -2213,6 +2316,7 @@ renderDQ();
     async function boot() {
       document.getElementById("connStatus").textContent = "syncing sheet...";
       wireSearch();
+      wireActions();
 startLiveSaRealtime();
 startFastUpdateRealtime();
 
@@ -2251,7 +2355,7 @@ startFastUpdateRealtime();
       } catch (e) {
         document.getElementById("connStatus").textContent = "failed";
         setAlert(
-          `Gagal baca spreadsheet / simpan ke Supabase: <b>${e?.message || e}</b><br><br>Pastikan nama sheet benar, spreadsheet bisa diakses, dan policy insert/update untuk tabel public sudah aktif.`,
+          `Gagal baca data Supabase: <b>${escapeHtml(e?.message || e)}</b><br><br>Pastikan tabel <span class="mono">sa_raw</span> dan <span class="mono">timesheet_raw</span> sudah terisi. Jalankan <b>npm run sync</b> untuk menarik data terbaru dari Google Sheet ke Supabase.`,
           "danger"
         );
       }

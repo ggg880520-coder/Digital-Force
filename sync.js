@@ -1,22 +1,25 @@
 const XLSX = require("xlsx");
+const crypto = require("crypto");
 
 /* =========================
-   WAJIB DIISI
+   KONFIGURASI
+   Disarankan memakai environment variable untuk production:
+   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SPREADSHEET_ID
 ========================= */
-const SUPABASE_URL = "https://wqgkwbtsfrmpgwxhaybz.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZ2t3YnRzZnJtcGd3eGhheWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODQ2MzAsImV4cCI6MjA4ODE2MDYzMH0.a4mN97nAiWqHhuhKJGNsmM1qukUdesUCThor-JKmirA";
-const SPREADSHEET_ID = "1ijSGUBlsRlbJj_F8iN_RekJbj2obLvEr";
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://wqgkwbtsfrmpgwxhaybz.supabase.co";
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  "";
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "13NWbHrHsyNcDaA1xe2OZPkyoNDuPHO6gLG2Pud3e6hA";
 
-/* =========================
-   SESUAIKAN JIKA PERLU
-========================= */
-const SHEET_SA = "Rasio SA";
-const SHEET_TS = "TimeSheet";
+const SHEET_SA = process.env.SHEET_SA || "Rasio SA";
+const SHEET_TS = process.env.SHEET_TS || "TimeSheet";
 
-const TABLE_SA = "Rasio SA";
-const TABLE_TS = "TimeSheet";
+const TABLE_SA = process.env.TABLE_SA || "sa_raw";
+const TABLE_TS = process.env.TABLE_TS || "timesheet_raw";
 
-const CHUNK_SIZE = 500;
+const CHUNK_SIZE = Number(process.env.CHUNK_SIZE || 500);
 
 /* =========================
    HELPERS
@@ -43,10 +46,71 @@ function asInteger(v) {
   return Number.isFinite(n) ? Math.round(n) : null;
 }
 
+function normalizeHeaderName(header) {
+  const raw = String(header ?? "")
+    .normalize("NFKC")
+    .replace(/\u00A0/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s/]/g, "")
+    .replace(/\s+/g, "_")
+    .replace(/\//g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  const aliasMap = {
+    case_number: "case_number",
+    sa_number: "sa_number",
+    actual_dispatched_date: "actual_dispatched_date",
+    actual_travel_date: "actual_travel_date",
+    actual_inprogress_date: "actual_inprogress_date",
+    actual_completed_date: "actual_completed_date",
+    timesheet_submitted: "timesheet_submitted",
+    time_sheet_submitted: "timesheet_submitted",
+    timesheet_approved: "timesheet_approved",
+    time_sheet_approved: "timesheet_approved",
+    case_description: "case_description",
+    service_area: "service_area",
+    mechanic_name: "mechanic_name",
+    scheduled_start: "scheduled_start",
+    sa_accuracy: "sa_accuracy",
+    month: "month",
+    nrp: "nrp",
+    available_hour: "available_hours",
+    available_hours: "available_hours",
+    qty_sa: "qty_sa",
+    ach: "ach",
+    tdt: "tdt",
+    efh: "efh",
+    ja: "ja",
+    je: "je",
+    ut_partner: "ut_partner",
+    date: "date",
+    service_resource: "service_resource"
+  };
+
+  return aliasMap[raw] || raw;
+}
+
+function normalizeRowKeys(row) {
+  const out = {};
+  for (const [key, value] of Object.entries(row)) {
+    out[normalizeHeaderName(key)] = value;
+  }
+  return out;
+}
+
 function hasAnyValue(row) {
   return Object.values(row).some(
     (v) => v !== null && v !== undefined && String(v).trim() !== ""
   );
+}
+
+function buildRowHash(obj) {
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(obj))
+    .digest("hex");
 }
 
 function buildSupabaseUrl(tableName, params = {}) {
@@ -58,15 +122,17 @@ function buildSupabaseUrl(tableName, params = {}) {
 }
 
 async function supabaseRequest(tableName, method, params = {}, body = null, extraHeaders = {}) {
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY belum diisi. Set environment variable sebelum menjalankan npm run sync.");
+  }
+
   const headers = {
     apikey: SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
     ...extraHeaders
   };
 
-  if (body !== null) {
-    headers["Content-Type"] = "application/json";
-  }
+  if (body !== null) headers["Content-Type"] = "application/json";
 
   const res = await fetch(buildSupabaseUrl(tableName, params), {
     method,
@@ -83,17 +149,13 @@ async function supabaseRequest(tableName, method, params = {}, body = null, extr
   return text ? JSON.parse(text) : null;
 }
 
-async function clearTable(tableName, anyColumnName) {
+async function clearTableBySource(tableName, sourceSheet) {
   await supabaseRequest(
     tableName,
     "DELETE",
-    {
-      or: `(${anyColumnName}.not.is.null,${anyColumnName}.is.null)`
-    },
+    { source_sheet: `eq.${sourceSheet}` },
     null,
-    {
-      Prefer: "return=minimal"
-    }
+    { Prefer: "return=minimal" }
   );
 }
 
@@ -110,10 +172,9 @@ async function insertChunks(tableName, rows) {
       "POST",
       {},
       chunk,
-      {
-        Prefer: "return=minimal"
-      }
+      { Prefer: "return=minimal" }
     );
+    console.log(`[${tableName}] inserted ${Math.min(i + CHUNK_SIZE, rows.length)}/${rows.length}`);
   }
 }
 
@@ -134,90 +195,92 @@ async function downloadWorkbookFromGoogleSheet() {
 
 function readSheetObjects(workbook, sheetName) {
   const ws = workbook.Sheets[sheetName];
-  if (!ws) {
-    throw new Error(`Sheet tidak ditemukan: ${sheetName}`);
-  }
+  if (!ws) throw new Error(`Sheet tidak ditemukan: ${sheetName}`);
 
   return XLSX.utils.sheet_to_json(ws, {
     defval: null,
     raw: false
-  }).filter(hasAnyValue);
+  })
+    .filter(hasAnyValue)
+    .map(normalizeRowKeys);
 }
 
 /* =========================
-   MAPPING SESUAI HEADER
+   MAPPING SESUAI KOLOM DASHBOARD
 ========================= */
 function mapRasioSaRows(rows) {
   return rows
-    .map((r) => ({
-      "Case_Number": asText(r["Case_Number"]),
-      "SA_Number": asText(r["SA_Number"]),
-      "Actual_Dispatched_Date": asText(r["Actual_Dispatched_Date"]),
-      "Actual_Travel_Date": asText(r["Actual_Travel_Date"]),
-      "Actual_InProgress_Date": asText(r["Actual_InProgress_Date"]),
-      "Actual_Completed_Date": asText(r["Actual_Completed_Date"]),
-      "TimeSheet_Submitted": asText(r["TimeSheet_Submitted"]),
-      "TimeSheet_Approved": asText(r["TimeSheet_Approved"]),
-      "Case_Description": asText(r["Case_Description"]),
-      "Service_Area": asText(r["Service_Area"]),
-      "Mechanic_Name": asText(r["Mechanic_Name"]),
-      "Scheduled_Start": asText(r["Scheduled_Start"]),
-      "SA_Accuracy": asInteger(r["SA_Accuracy"])
-    }))
-    .filter((r) => r["Case_Number"] || r["SA_Number"] || r["Mechanic_Name"]);
+    .map((r) => {
+      const row = {
+        case_number: asText(r.case_number),
+        sa_number: asText(r.sa_number),
+        actual_dispatched_date: asText(r.actual_dispatched_date),
+        actual_travel_date: asText(r.actual_travel_date),
+        actual_inprogress_date: asText(r.actual_inprogress_date),
+        actual_completed_date: asText(r.actual_completed_date),
+        timesheet_submitted: asText(r.timesheet_submitted),
+        timesheet_approved: asText(r.timesheet_approved),
+        case_description: asText(r.case_description),
+        service_area: asText(r.service_area),
+        mechanic_name: asText(r.mechanic_name),
+        scheduled_start: asText(r.scheduled_start),
+        sa_accuracy: asInteger(r.sa_accuracy),
+        source_sheet: SHEET_SA
+      };
+      row.source_row_hash = buildRowHash(row);
+      return row;
+    })
+    .filter((r) => r.case_number || r.sa_number || r.mechanic_name);
 }
 
 function mapTimesheetRows(rows) {
   return rows
-    .map((r) => ({
-      "Month": asText(r["Month"]),
-      "NRP": asText(r["NRP"]),
-      "Mechanic_Name": asText(r["Mechanic_Name"]),
-      "Available_Hours": asNumber(r["Available_Hours"]),
-      "Qty_SA": asNumber(r["Qty_SA"]),
-      "ACH": asNumber(r["ACH"]),
-      "TDT": asNumber(r["TDT"]),
-      "EFH": asNumber(r["EFH"]),
-      "JA": asNumber(r["JA"]),
-      "JE": asNumber(r["JE"]),
-      "UT/Partner": asText(r["UT/Partner"]),
-      "Date": asText(r["Date"]),
-      "Service_Resource": asText(r["Service_Resource"])
-    }))
-    .filter((r) => r["NRP"] || r["Mechanic_Name"]);
+    .map((r) => {
+      const row = {
+        month: asText(r.month),
+        nrp: asText(r.nrp),
+        mechanic_name: asText(r.mechanic_name),
+        available_hours: asNumber(r.available_hours),
+        qty_sa: asNumber(r.qty_sa),
+        ach: asNumber(r.ach),
+        tdt: asNumber(r.tdt),
+        efh: asNumber(r.efh),
+        ja: asNumber(r.ja),
+        je: asNumber(r.je),
+        ut_partner: asText(r.ut_partner),
+        date: asText(r.date),
+        service_resource: asText(r.service_resource),
+        source_sheet: SHEET_TS
+      };
+      row.source_row_hash = buildRowHash(row);
+      return row;
+    })
+    .filter((r) => r.nrp || r.mechanic_name || r.service_resource);
 }
 
 /* =========================
    SYNC
 ========================= */
-async function syncRasioSa(workbook) {
-  const sourceRows = readSheetObjects(workbook, SHEET_SA);
-  const payload = mapRasioSaRows(sourceRows);
+async function syncSheet(workbook, sheetName, tableName, mapper) {
+  const sourceRows = readSheetObjects(workbook, sheetName);
+  const payload = mapper(sourceRows);
 
-  console.log(`[${TABLE_SA}] source rows: ${sourceRows.length}`);
-  await clearTable(TABLE_SA, "Case_Number");
-  await insertChunks(TABLE_SA, payload);
-  console.log(`[${TABLE_SA}] synced rows: ${payload.length}`);
-}
-
-async function syncTimesheet(workbook) {
-  const sourceRows = readSheetObjects(workbook, SHEET_TS);
-  const payload = mapTimesheetRows(sourceRows);
-
-  console.log(`[${TABLE_TS}] source rows: ${sourceRows.length}`);
-  await clearTable(TABLE_TS, "NRP");
-  await insertChunks(TABLE_TS, payload);
-  console.log(`[${TABLE_TS}] synced rows: ${payload.length}`);
+  console.log(`[${tableName}] source rows: ${sourceRows.length}`);
+  await clearTableBySource(tableName, sheetName);
+  await insertChunks(tableName, payload);
+  console.log(`[${tableName}] synced rows: ${payload.length}`);
 }
 
 async function main() {
   try {
     console.log("=== SYNC START ===");
+    console.log(`Spreadsheet: ${SPREADSHEET_ID}`);
+    console.log(`Tables: ${TABLE_SA}, ${TABLE_TS}`);
 
     const workbook = await downloadWorkbookFromGoogleSheet();
 
-    await syncRasioSa(workbook);
-    await syncTimesheet(workbook);
+    await syncSheet(workbook, SHEET_SA, TABLE_SA, mapRasioSaRows);
+    await syncSheet(workbook, SHEET_TS, TABLE_TS, mapTimesheetRows);
 
     console.log("=== SYNC DONE ===");
   } catch (err) {
