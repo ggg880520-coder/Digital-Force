@@ -705,7 +705,7 @@
       <div class="nav-spacer"></div>
 
       <button type="button" id="btnAjukanUpdate" class="nav-action nav-action-primary">AJUKAN UPDATE</button>
-      <button type="button" id="btnExportExcel" class="nav-action nav-action-outline">EXPORT EXCEL</button>
+      <button type="button" id="btnCreateSa" class="nav-action nav-action-outline">CREATE SA</button>
 
       <div class="nav-status">
         <span class="status-dot"></span>
@@ -1189,6 +1189,57 @@
     </section>
 
   </main>
+
+  <!-- CREATE SA MODAL -->
+  <div class="modal fade" id="createSaModal" tabindex="-1" aria-labelledby="createSaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:22px; overflow:hidden;">
+        <div class="modal-header" style="background:#101010; color:#fff; border-bottom:4px solid #ffd100;">
+          <div>
+            <h5 class="modal-title fw-bold" id="createSaModalLabel">Create SA dari Website</h5>
+            <div class="small" style="color:rgba(255,255,255,.72);">Data akan masuk ke Live SA dan tabel sa_jobs.</div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="createSaForm">
+          <div class="modal-body">
+            <div class="alert alert-warning py-2 small mb-3">
+              Format sama seperti Telegram: <b>/cs BASE_SA_ID NRP JOB_TYPE SITE</b>. Untuk banyak mekanik, pisahkan NRP dengan koma.
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Base SA ID</label>
+              <input type="text" class="form-control" id="webSaBaseId" placeholder="Contoh: SA007" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">NRP Mekanik</label>
+              <input type="text" class="form-control" id="webSaNrpList" placeholder="Contoh: 702230471 atau 0796,702230471" required>
+              <div class="form-text">Jika lebih dari satu NRP, sistem membuat SA tim: SA007-0796, SA007-702230471, dst.</div>
+            </div>
+
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-bold">Job Type</label>
+                <input type="text" class="form-control" id="webSaJobType" placeholder="Contoh: TRS" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-bold">Site</label>
+                <input type="text" class="form-control" id="webSaSite" placeholder="Contoh: SITE-UDU" required>
+              </div>
+            </div>
+
+            <div id="createSaModalAlert" class="mt-3"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light rounded-pill fw-bold" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn rounded-pill fw-bold" style="background:#ffd100; color:#000;" id="btnSubmitCreateSa">Simpan SA</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -3279,8 +3330,180 @@ function startFastUpdateRealtime() {
       }
     }
 
+
+    function setCreateSaModalAlert(html, type = "warning") {
+      const el = document.getElementById("createSaModalAlert");
+      if (!el) return;
+      el.innerHTML = html ? `<div class="alert alert-${type} py-2 mb-0">${html}</div>` : "";
+    }
+
+    function parseWebNrpList(value) {
+      return String(value || "")
+        .split(",")
+        .map(v => v.trim())
+        .filter(Boolean)
+        .filter((v, i, arr) => arr.indexOf(v) === i);
+    }
+
+    async function getMechanicNameForWebCreate(nrp) {
+      const key = String(nrp || "").trim();
+      if (!key) return "UNKNOWN";
+
+      const cachedName = findMechanicNameByNrp(key);
+      if (cachedName) return cachedName;
+
+      try {
+        const sa = await supabase
+          .from(SA_RAW_TABLE)
+          .select("mechanic_name,is_placeholder,updated_at")
+          .eq("nrp", key)
+          .not("mechanic_name", "is", null)
+          .limit(20);
+
+        if (!sa.error && Array.isArray(sa.data) && sa.data.length) {
+          const sorted = [...sa.data].sort((a, b) => {
+            const ap = a.is_placeholder ? 1 : 0;
+            const bp = b.is_placeholder ? 1 : 0;
+            if (ap !== bp) return ap - bp;
+            return String(b.updated_at || "").localeCompare(String(a.updated_at || ""));
+          });
+          const name = cleanCell(sorted.find(r => cleanCell(r.mechanic_name))?.mechanic_name);
+          if (name) return name;
+        }
+      } catch (_) {}
+
+      try {
+        const ts = await supabase
+          .from(TS_RAW_TABLE)
+          .select("mechanic_name,service_resource,is_placeholder,updated_at")
+          .eq("nrp", key)
+          .limit(20);
+
+        if (!ts.error && Array.isArray(ts.data) && ts.data.length) {
+          const sorted = [...ts.data].sort((a, b) => {
+            const ap = a.is_placeholder ? 1 : 0;
+            const bp = b.is_placeholder ? 1 : 0;
+            if (ap !== bp) return ap - bp;
+            return String(b.updated_at || "").localeCompare(String(a.updated_at || ""));
+          });
+          const name = cleanCell(sorted.find(r => cleanCell(r.mechanic_name) || cleanCell(r.service_resource))?.mechanic_name)
+            || cleanCell(sorted.find(r => cleanCell(r.service_resource))?.service_resource);
+          if (name) return name;
+        }
+      } catch (_) {}
+
+      try {
+        const bu = await supabase
+          .from("bot_users")
+          .select("name")
+          .eq("nrp", key)
+          .limit(1);
+        const name = cleanCell(bu.data?.[0]?.name);
+        if (!bu.error && name) return name;
+      } catch (_) {}
+
+      return "UNKNOWN";
+    }
+
+    async function createSaFromWebsite(event) {
+      event?.preventDefault?.();
+      setCreateSaModalAlert("");
+
+      const submitBtn = document.getElementById("btnSubmitCreateSa");
+      const baseSaId = String(document.getElementById("webSaBaseId")?.value || "").trim().toUpperCase();
+      const nrpList = parseWebNrpList(document.getElementById("webSaNrpList")?.value);
+      const jobType = String(document.getElementById("webSaJobType")?.value || "").trim().toUpperCase();
+      const site = String(document.getElementById("webSaSite")?.value || "").trim().toUpperCase();
+
+      if (!baseSaId || !nrpList.length || !jobType || !site) {
+        setCreateSaModalAlert("Lengkapi Base SA ID, NRP, Job Type, dan Site.", "danger");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Menyimpan...";
+
+      try {
+        const multiMode = nrpList.length > 1;
+        const sharedSaId = multiMode ? baseSaId : null;
+        const nowIso = new Date().toISOString();
+
+        const candidateRows = [];
+        for (const nrp of nrpList) {
+          const saId = multiMode ? `${baseSaId}-${nrp}` : baseSaId;
+          const mechanicName = await getMechanicNameForWebCreate(nrp);
+          candidateRows.push({
+            sa_id: saId,
+            shared_sa_id: sharedSaId,
+            nrp,
+            mechanic_name: mechanicName,
+            job_type: jobType,
+            site,
+            status: "DISPATCH",
+            dispatch_time: nowIso,
+            travel_time: null,
+            inprogress_time: null,
+            completed_time: null,
+            post_activity_time: null,
+            creator_chat_id: null,
+            source_type: "web_create",
+            created_source: "website",
+            telegram_notified: false,
+            telegram_notified_at: null,
+            web_created_at: nowIso,
+            updated_at: nowIso
+          });
+        }
+
+        const saIds = candidateRows.map(r => r.sa_id);
+        const existing = await supabase
+          .from(SA_JOBS_TABLE)
+          .select("sa_id")
+          .in("sa_id", saIds);
+
+        if (existing.error) throw existing.error;
+
+        const existingIds = new Set((existing.data || []).map(r => String(r.sa_id || "").toUpperCase()));
+        const rowsToInsert = candidateRows.filter(r => !existingIds.has(String(r.sa_id).toUpperCase()));
+
+        if (!rowsToInsert.length) {
+          setCreateSaModalAlert("Semua SA ID sudah ada. Gunakan Base SA ID lain.", "warning");
+          return;
+        }
+
+        const insertResult = await supabase
+          .from(SA_JOBS_TABLE)
+          .insert(rowsToInsert);
+
+        if (insertResult.error) throw insertResult.error;
+
+        await fetchLiveJobs();
+        renderLiveJobs(document.getElementById("liveSearch")?.value || "");
+        setAlert(`Create SA berhasil: <b>${rowsToInsert.map(r => escapeHtml(r.sa_id)).join(", ")}</b>. Data sudah masuk ke Live SA.`, "success");
+
+        const modalEl = document.getElementById("createSaModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal?.hide();
+        document.getElementById("createSaForm")?.reset();
+      } catch (e) {
+        setCreateSaModalAlert(`Gagal create SA: <b>${escapeHtml(e?.message || e)}</b><br><span class="small">Pastikan policy INSERT sa_jobs/RPC Supabase sudah aktif.</span>`, "danger");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Simpan SA";
+      }
+    }
+
+    function openCreateSaModal() {
+      setCreateSaModalAlert("");
+      const modalEl = document.getElementById("createSaModal");
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+      setTimeout(() => document.getElementById("webSaBaseId")?.focus(), 250);
+    }
+
     function wireActions() {
-      document.getElementById("btnExportExcel")?.addEventListener("click", exportDashboardToExcel);
+      document.getElementById("btnCreateSa")?.addEventListener("click", openCreateSaModal);
+      document.getElementById("createSaForm")?.addEventListener("submit", createSaFromWebsite);
       document.getElementById("btnAjukanUpdate")?.addEventListener("click", refreshDashboardFromSupabase);
       document.getElementById("btnBackToSa")?.addEventListener("click", () => {
         location.hash = "sa";
