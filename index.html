@@ -1611,6 +1611,32 @@ function monthKeyFromValue(v) {
       return null;
     }
 
+    function getAccuracyIssueCount(row) {
+      const n = Number(row?.accuracy_issue_count ?? row?.fast_update_count ?? row?.staging_violation_count);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function getAccuracyNote(row) {
+      return cleanCell(row?.accuracy_note)
+        || cleanCell(row?.staging_accuracy_note)
+        || cleanCell(row?.fast_update_note)
+        || "";
+    }
+
+    function accuracyBadgeHtml(acc, row = null) {
+      const issueCount = getAccuracyIssueCount(row);
+      const note = getAccuracyNote(row);
+      const title = note ? ` title="${escapeHtml(note)}"` : "";
+      if (Number(acc) === 1) {
+        return `<span class="badge bg-success"${title}>Accurate</span>`;
+      }
+      if (Number(acc) === 0) {
+        const extra = issueCount > 0 ? ` <span class="badge bg-danger ms-1" title="Jumlah update terlalu cepat">${issueCount}x cepat</span>` : "";
+        return `<span class="badge bg-warning text-dark"${title}>Not Accurate</span>${extra}`;
+      }
+      return "-";
+    }
+
     function buildRowHash(obj) {
       return btoa(
         unescape(
@@ -2348,7 +2374,9 @@ function getTimesheetOverviewEval(pct) {
           actual_completed_at: cleanCell(r.actual_completed_date),
           time_sheet_submitted_at: cleanCell(r.timesheet_submitted),
           time_sheet_approved_at: cleanCell(r.timesheet_approved),
-          sa_staging_accuracy: parseAccuracyValue(r.sa_accuracy)
+          sa_staging_accuracy: parseAccuracyValue(r.sa_accuracy),
+          accuracy_issue_count: getAccuracyIssueCount(r),
+          accuracy_note: getAccuracyNote(r)
         }))
         .sort((a, b) => String(a.scheduled_start_at || "").localeCompare(String(b.scheduled_start_at || "")));
     }
@@ -2547,13 +2575,7 @@ function getTimesheetOverviewEval(pct) {
           <td class="mono">${cellHtml(r.case_number)}</td>
           <td>${cellHtml(r.mechanic_name)}</td>
           <td>${cellHtml(r.service_area)}</td>
-          <td>${
-            Number(r.sa_staging_accuracy) === 1
-              ? `<span class="badge bg-success">Accurate</span>`
-              : Number(r.sa_staging_accuracy) === 0
-                ? `<span class="badge bg-warning text-dark">Not Accurate</span>`
-                : "-"
-          }</td>
+          <td>${accuracyBadgeHtml(r.sa_staging_accuracy, r)}</td>
         </tr>
       `).join("");
 
@@ -2653,11 +2675,7 @@ function getTimesheetOverviewEval(pct) {
             <td class="mono">${formatDateTimeID(r.time_sheet_submitted_at)}</td>
             <td class="mono">${formatDateTimeID(r.time_sheet_approved_at)}</td>
             <td class="text-center">
-              ${Number(r.sa_staging_accuracy) === 1
-                ? `<span class="badge bg-success">Accurate</span>`
-                : Number(r.sa_staging_accuracy) === 0
-                  ? `<span class="badge bg-warning text-dark">Not Accurate</span>`
-                  : `-`}
+              ${accuracyBadgeHtml(r.sa_staging_accuracy, r)}
             </td>
           </tr>
         `)
