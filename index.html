@@ -447,6 +447,117 @@
       background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.12);
     }
 
+
+    /* Performance Analytics */
+    .perf-grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+    .perf-card{
+      grid-column: span 12;
+      background: rgba(3, 18, 32, .94);
+      border: 1px solid rgba(148, 163, 184, .16);
+      border-radius: 4px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.22);
+      overflow:hidden;
+      color: #ffffff;
+      min-height: 260px;
+    }
+    .perf-card.perf-small{ min-height: 190px; }
+    .perf-card .perf-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 12px 14px 4px;
+    }
+    .perf-title{
+      font-size: .98rem;
+      line-height:1.15;
+      font-weight: 800;
+      color:#ffffff;
+      margin:0;
+    }
+    .perf-subtitle{
+      color: rgba(255,255,255,.82);
+      font-size: .74rem;
+      line-height:1.25;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+    .perf-tools{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color: rgba(255,255,255,.82);
+      font-size:.9rem;
+      flex:0 0 auto;
+    }
+    .perf-body{
+      padding: 8px 14px 8px;
+      min-height: 176px;
+    }
+    .perf-body canvas{
+      width: 100% !important;
+      max-height: 220px;
+    }
+    .perf-footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      color:#ffffff;
+      font-size:.72rem;
+      font-weight:800;
+      padding: 2px 14px 10px;
+    }
+    .perf-footer .perf-asof{ text-align:right; }
+    .perf-kpi{
+      min-height: 100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .perf-kpi-value{
+      font-size: clamp(2.6rem, 5vw, 5rem);
+      line-height: 1;
+      font-weight: 800;
+      color: rgba(20, 184, 166, .72);
+      letter-spacing: -1.5px;
+      text-align:center;
+      padding: 28px 6px 18px;
+      background: rgba(15, 35, 67, .42);
+      margin: 0 14px;
+    }
+    .perf-note{
+      color: rgba(255,255,255,.72);
+      font-size:.78rem;
+      padding: 0 14px 10px;
+    }
+    .perf-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border-radius:999px;
+      padding:5px 10px;
+      background: rgba(59, 130, 246, .16);
+      border: 1px solid rgba(59, 130, 246, .22);
+      color:#dbeafe;
+      font-size:.78rem;
+      font-weight:800;
+    }
+    @media(min-width: 768px){
+      .perf-card.span-3{ grid-column: span 6; }
+      .perf-card.span-4{ grid-column: span 6; }
+      .perf-card.span-6{ grid-column: span 6; }
+    }
+    @media(min-width: 1200px){
+      .perf-card.span-3{ grid-column: span 3; }
+      .perf-card.span-4{ grid-column: span 4; }
+      .perf-card.span-6{ grid-column: span 6; }
+    }
+
   </style>
 </head>
 
@@ -470,7 +581,7 @@
       <a href="#sa" data-section="sa" class="nav-link-side">RASIO SA</a>
       <a href="#timesheet" data-section="timesheet" class="nav-link-side">TIMESHEET</a>
       <a href="#cases" data-section="cases" class="nav-link-side">DETAIL SA</a>
-      <a href="#dq" data-section="dq" class="nav-link-side">DATA QUALITY</a>
+      <a href="#dq" data-section="dq" class="nav-link-side">PERFORMANCE</a>
 
       <div class="nav-spacer"></div>
 
@@ -770,59 +881,143 @@
   </div>
 </section>
 
-    <!-- DATA QUALITY -->
+    <!-- PERFORMANCE ANALYTICS -->
     <section id="sec-dq" class="section">
       <div class="toolbar">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="perf-badge"><i class="bi bi-bar-chart-line-fill"></i> Performance Analytics</span>
+          <span class="small-muted text-white" id="perfPeriodInfo">-</span>
+        </div>
+        <div class="small-muted text-white" id="perfDataInfo">Sumber: Detail SA + TimeSheet</div>
       </div>
 
-      <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <div class="card card-kpi">
-            <div class="card-body">
-              <div class="fw-bold">Total Case Aktif</div>
-              <div class="fs-3 fw-bold mono" id="dq_caseTotal">-</div>
-              <div class="small-muted">jumlah case pada periode yang sedang dipilih</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-          <div class="card card-kpi">
-            <div class="card-body">
-              <div class="fw-bold">SA Ratio Mismatch</div>
-              <div class="fs-3 fw-bold mono" id="dq_saMismatch">-</div>
-              <div class="small-muted">dari total <span class="mono" id="dq_saTotal">-</span> mekanik (cek ratio vs accurate/(accurate+not))</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-12">
-          <div class="card card-kpi">
-            <div class="card-body">
-              <div class="fw-bold mb-2">Timesheet Consistency</div>
-              <div class="row g-2">
-                <div class="col-12 col-md-4">
-                  <div class="metric-box">
-                    <div class="small-muted">EFH mismatch (ACH - TDT)</div>
-                    <div class="fs-4 fw-bold mono" id="dq_efhMismatch">-</div>
-                  </div>
-                </div>
-                <div class="col-12 col-md-4">
-                  <div class="metric-box">
-                    <div class="small-muted">JA mismatch (ACH/Avail)</div>
-                    <div class="fs-4 fw-bold mono" id="dq_jaMismatch">-</div>
-                  </div>
-                </div>
-                <div class="col-12 col-md-4">
-                  <div class="metric-box">
-                    <div class="small-muted">JE mismatch (EFH/ACH)</div>
-                    <div class="fs-4 fw-bold mono" id="dq_jeMismatch">-</div>
-                  </div>
-                </div>
+      <div class="perf-grid">
+        <div class="perf-card span-3 perf-small">
+          <div class="perf-kpi">
+            <div class="perf-head">
+              <div>
+                <h3 class="perf-title">Qty SA</h3>
+                <div class="perf-subtitle">(Mechanic UT)</div>
               </div>
-              <div class="small-muted mt-2">Total timesheet rows: <span class="mono" id="dq_tsTotal">-</span></div>
+              <div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div>
             </div>
+            <div class="perf-kpi-value mono" id="perfQtyUT">-</div>
+            <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfQtyUT">-</span></div>
           </div>
+        </div>
+
+        <div class="perf-card span-3 perf-small">
+          <div class="perf-kpi">
+            <div class="perf-head">
+              <div>
+                <h3 class="perf-title">Qty SA</h3>
+                <div class="perf-subtitle">(Mechanic Partner)</div>
+              </div>
+              <div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div>
+            </div>
+            <div class="perf-kpi-value mono" id="perfQtyPartner">-</div>
+            <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfQtyPartner">-</span></div>
+          </div>
+        </div>
+
+        <div class="perf-card span-3 perf-small">
+          <div class="perf-kpi">
+            <div class="perf-head">
+              <div>
+                <h3 class="perf-title">Job Availability</h3>
+                <div class="perf-subtitle">(Total per Period)</div>
+              </div>
+              <div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div>
+            </div>
+            <div class="perf-kpi-value mono" id="perfJaValue">-</div>
+            <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfJa">-</span></div>
+          </div>
+        </div>
+
+        <div class="perf-card span-3 perf-small">
+          <div class="perf-kpi">
+            <div class="perf-head">
+              <div>
+                <h3 class="perf-title">Job Effectiveness</h3>
+                <div class="perf-subtitle">(Total per Period)</div>
+              </div>
+              <div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div>
+            </div>
+            <div class="perf-kpi-value mono" id="perfJeValue">-</div>
+            <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfJe">-</span></div>
+          </div>
+        </div>
+
+        <div class="perf-card span-6">
+          <div class="perf-head"><div><h3 class="perf-title">Job Availability</h3><div class="perf-subtitle">(Trend in Month)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfJaTrendChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfJaTrend">-</span></div>
+        </div>
+
+        <div class="perf-card span-6">
+          <div class="perf-head"><div><h3 class="perf-title">Job Effectiveness</h3><div class="perf-subtitle">(Trend in Month)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfJeTrendChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfJeTrend">-</span></div>
+        </div>
+
+        <div class="perf-card span-3">
+          <div class="perf-head"><div><h3 class="perf-title">Total Available Hours</h3><div class="perf-subtitle">(Trend in Month)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfAvailTrendChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfAvailTrend">-</span></div>
+        </div>
+
+        <div class="perf-card span-3">
+          <div class="perf-head"><div><h3 class="perf-title">Total Man Hours</h3><div class="perf-subtitle">(Trend in Month)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfAchTrendChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfAchTrend">-</span></div>
+        </div>
+
+        <div class="perf-card span-3">
+          <div class="perf-head"><div><h3 class="perf-title">Total Development Hours</h3><div class="perf-subtitle">(Trend in Month)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfTdtTrendChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfTdtTrend">-</span></div>
+        </div>
+
+        <div class="perf-card span-3">
+          <div class="perf-head"><div><h3 class="perf-title">Total Effective Hours</h3><div class="perf-subtitle">(Trend in Month)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfEfhTrendChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfEfhTrend">-</span></div>
+        </div>
+
+        <div class="perf-card span-3">
+          <div class="perf-head"><div><h3 class="perf-title">Available Hours</h3><div class="perf-subtitle">(Detail per Area)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfAvailAreaChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfAvailArea">-</span></div>
+        </div>
+
+        <div class="perf-card span-3">
+          <div class="perf-head"><div><h3 class="perf-title">Man Hours</h3><div class="perf-subtitle">(Detail per Area)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfAchAreaChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfAchArea">-</span></div>
+        </div>
+
+        <div class="perf-card span-3">
+          <div class="perf-head"><div><h3 class="perf-title">Development Hours</h3><div class="perf-subtitle">(Detail per Area)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfTdtAreaChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfTdtArea">-</span></div>
+        </div>
+
+        <div class="perf-card span-3">
+          <div class="perf-head"><div><h3 class="perf-title">Effective Hours</h3><div class="perf-subtitle">(Detail per Area)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfEfhAreaChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (JA JE)</span><span class="perf-asof" id="perfAsOfEfhArea">-</span></div>
+        </div>
+
+        <div class="perf-card span-6">
+          <div class="perf-head"><div><h3 class="perf-title">Qty SA by Service Area</h3><div class="perf-subtitle">(Detail SA)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfSaAreaChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (Detail SA)</span><span class="perf-asof" id="perfAsOfSaArea">-</span></div>
+        </div>
+
+        <div class="perf-card span-6">
+          <div class="perf-head"><div><h3 class="perf-title">SA Staging Accuracy</h3><div class="perf-subtitle">(Accurate vs Not Accurate)</div></div><div class="perf-tools"><i class="bi bi-arrow-clockwise"></i><i class="bi bi-arrows-fullscreen"></i></div></div>
+          <div class="perf-body"><canvas id="perfSaAccuracyChart"></canvas></div>
+          <div class="perf-footer"><span>View Report (Detail SA)</span><span class="perf-asof" id="perfAsOfSaAccuracy">-</span></div>
         </div>
       </div>
     </section>
@@ -874,7 +1069,7 @@
   sa: { title: "Rasio SA", subtitle: "Agregasi akurasi staging SA per mekanik." },
   timesheet: { title: "TimeSheet", subtitle: "Kinerja mekanik dari data JA, JE, ACH, TDT, dan EFH." },
   cases: { title: "Detail SA", subtitle: "Detail dari sheet Rasio SA." },
-  dq: { title: "Data Quality", subtitle: "Pemeriksaan kelengkapan dan konsistensi data yang sedang dipakai dashboard." }
+  dq: { title: "Performance Analytics", subtitle: "Grafik performa SA, hours, JA, dan JE dari data Detail SA dan TimeSheet." }
 };
 
     function setActiveSection(key) {
@@ -889,6 +1084,10 @@
 
       document.getElementById("pageTitle").textContent = SECTIONS[key]?.title || "Dashboard";
       document.getElementById("pageSubtitle").textContent = SECTIONS[key]?.subtitle || "";
+
+      if (key === "dq" && typeof renderDQ === "function") {
+        setTimeout(() => renderDQ(), 80);
+      }
     }
 
     window.addEventListener("hashchange", () => {
@@ -925,6 +1124,7 @@ fastUpdates: []
           timesheet: { three: 97, two: 95, one: 90, maxStars: 3 }
         };
         let saChart = null;
+        let analyticsCharts = {};
 
         function formatPct01(val, decimals=1) {
           const n = Number(val);
@@ -1598,6 +1798,8 @@ function getTimesheetOverviewEval(pct) {
           .map(r => ({
             nrp: cleanCell(r.nrp),
             mechanic_name: cleanCell(r.mechanic_name) || cleanCell(r.service_resource) || "-",
+            service_resource: cleanCell(r.service_resource) || cleanCell(r.mechanic_name) || "-",
+            ut_partner: cleanCell(r.ut_partner),
             available_hour: toNumber(r.available_hours),
             sa_count: toNumber(r.qty_sa),
             ach: toNumber(r.ach),
@@ -1936,59 +2138,290 @@ function getTimesheetOverviewEval(pct) {
       if (caseInfo) caseInfo.textContent = `${formatNumber((cache.cases || []).length)} case tersedia`;
     }
 
+    function monthLabelShort(key) {
+      if (!key) return "-";
+      return new Date(`${key}-01`).toLocaleDateString("id-ID", { month: "short", year: "numeric" });
+    }
+
+    function kFormat(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "-";
+      const abs = Math.abs(n);
+      if (abs >= 1000000) return `${(n / 1000000).toFixed(1).replace(/\.0$/, "")}m`;
+      if (abs >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+      return String(Math.round(n));
+    }
+
+    function calcPct(num, den) {
+      const a = Number(num);
+      const b = Number(den);
+      if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return null;
+      return (a / b) * 100;
+    }
+
+    function periodLabelCurrent() {
+      return cache.periodKey ? monthLabelShort(cache.periodKey) : "-";
+    }
+
+    function areaLabel(row) {
+      return cleanCell(row?.service_resource) || cleanCell(row?.service_area) || cleanCell(row?.mechanic_name) || cleanCell(row?.nrp) || "Tanpa Area";
+    }
+
+    function buildMetricByMonth(metric) {
+      const map = new Map();
+      for (const r of syncState.tsRows || []) {
+        const key = getTsPeriodKey(r);
+        if (!key) continue;
+        if (!map.has(key)) map.set(key, { available: 0, ach: 0, tdt: 0, efh: 0 });
+        const item = map.get(key);
+        item.available += Number(toNumber(r.available_hours)) || 0;
+        item.ach += Number(toNumber(r.ach)) || 0;
+        item.tdt += Number(toNumber(r.tdt)) || 0;
+        item.efh += Number(toNumber(r.efh)) || 0;
+      }
+
+      const keys = [...map.keys()].sort().slice(-12);
+      return {
+        labels: keys.map(monthLabelShort),
+        values: keys.map(k => {
+          const item = map.get(k);
+          if (metric === "ja") return calcPct(item.ach, item.available) ?? 0;
+          if (metric === "je") return calcPct(item.efh, item.ach) ?? 0;
+          return Number(item[metric]) || 0;
+        })
+      };
+    }
+
+    function buildMetricByArea(rows, metric, topN = 10) {
+      const map = new Map();
+      for (const r of rows || []) {
+        const key = areaLabel(r);
+        if (!map.has(key)) map.set(key, { label: key, available: 0, ach: 0, tdt: 0, efh: 0, qty: 0 });
+        const item = map.get(key);
+        item.available += Number(r.available_hour) || Number(toNumber(r.available_hours)) || 0;
+        item.ach += Number(r.ach) || 0;
+        item.tdt += Number(r.tdt) || 0;
+        item.efh += Number(r.efh) || 0;
+        item.qty += Number(r.sa_count) || Number(toNumber(r.qty_sa)) || 0;
+      }
+
+      const arr = [...map.values()].map(item => ({
+        ...item,
+        ja: calcPct(item.ach, item.available) ?? 0,
+        je: calcPct(item.efh, item.ach) ?? 0
+      }));
+
+      return arr
+        .sort((a, b) => (Number(b[metric]) || 0) - (Number(a[metric]) || 0))
+        .slice(0, topN);
+    }
+
+    function buildSaByArea(cases, topN = 12) {
+      const map = new Map();
+      for (const r of cases || []) {
+        const key = cleanCell(r.service_area) || "Tanpa Area";
+        map.set(key, (map.get(key) || 0) + 1);
+      }
+      return [...map.entries()]
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, topN);
+    }
+
+    function chartBaseOptions(extra = {}) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 350 },
+        plugins: {
+          legend: { display: false, labels: { color: "rgba(255,255,255,.84)" } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label || "Value"}: ${Number(ctx.parsed?.y ?? ctx.parsed?.x ?? 0).toLocaleString("id-ID")}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "rgba(255,255,255,.78)", font: { size: 10, weight: "700" } },
+            grid: { color: "rgba(148,163,184,.10)" },
+            title: { display: false, color: "rgba(255,255,255,.82)" }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: "rgba(255,255,255,.74)", callback: (v) => kFormat(v) },
+            grid: { color: "rgba(148,163,184,.12)" },
+            title: { display: false, color: "rgba(255,255,255,.82)" }
+          }
+        },
+        ...extra
+      };
+    }
+
+    function destroyAnalyticsCharts() {
+      Object.values(analyticsCharts || {}).forEach(chart => {
+        try { chart?.destroy(); } catch (_) {}
+      });
+      analyticsCharts = {};
+    }
+
+    function makePerfChart(id, config) {
+      const ctx = document.getElementById(id);
+      if (!ctx) return;
+      if (analyticsCharts[id]) {
+        analyticsCharts[id].destroy();
+        delete analyticsCharts[id];
+      }
+      analyticsCharts[id] = new Chart(ctx, config);
+    }
+
+    function renderBarTrend(id, labels, values, label, percent = false) {
+      makePerfChart(id, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label,
+            data: values,
+            backgroundColor: "rgba(59, 154, 230, .92)",
+            borderColor: "rgba(147, 197, 253, .95)",
+            borderWidth: 1,
+            borderRadius: 2,
+            maxBarThickness: 54
+          }]
+        },
+        options: chartBaseOptions({
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${label}: ${percent ? formatPercent(ctx.parsed.y, 1) : kFormat(ctx.parsed.y)}` } }
+          },
+          scales: {
+            x: { ticks: { color: "rgba(255,255,255,.82)", font: { size: 10, weight: "800" } }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: "rgba(255,255,255,.72)", callback: (v) => percent ? `${v}%` : kFormat(v) }, grid: { color: "rgba(148,163,184,.13)" } }
+          }
+        })
+      });
+    }
+
+    function renderHorizontalBar(id, rows, metric, label, percent = false) {
+      makePerfChart(id, {
+        type: "bar",
+        data: {
+          labels: rows.map(r => r.label),
+          datasets: [{
+            label,
+            data: rows.map(r => Number(r[metric]) || Number(r.value) || 0),
+            backgroundColor: "rgba(59, 154, 230, .92)",
+            borderColor: "rgba(147, 197, 253, .95)",
+            borderWidth: 1,
+            borderRadius: 2,
+            maxBarThickness: 22
+          }]
+        },
+        options: chartBaseOptions({
+          indexAxis: "y",
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${label}: ${percent ? formatPercent(ctx.parsed.x, 1) : kFormat(ctx.parsed.x)}` } }
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { color: "rgba(255,255,255,.72)", callback: (v) => percent ? `${v}%` : kFormat(v) }, grid: { color: "rgba(148,163,184,.13)" } },
+            y: { ticks: { color: "rgba(255,255,255,.84)", font: { size: 10, weight: "800" } }, grid: { display: false } }
+          }
+        })
+      });
+    }
+
+    function renderAccuracyChart(cases) {
+      const accurate = cases.filter(r => Number(r.sa_staging_accuracy) === 1).length;
+      const notAccurate = cases.filter(r => Number(r.sa_staging_accuracy) === 0).length;
+      makePerfChart("perfSaAccuracyChart", {
+        type: "doughnut",
+        data: {
+          labels: ["Accurate", "Not Accurate"],
+          datasets: [{
+            data: [accurate, notAccurate],
+            backgroundColor: ["rgba(34,197,94,.82)", "rgba(245,158,11,.88)"],
+            borderColor: "rgba(255,255,255,.10)",
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom", labels: { color: "rgba(255,255,255,.84)", font: { weight: "800" } } },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${formatNumber(ctx.parsed)}` } }
+          }
+        }
+      });
+    }
+
+    function setPerfAsOf() {
+      const asOf = `As of ${new Date().toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" })}, ${new Date().toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit" })}`;
+      document.querySelectorAll('[id^="perfAsOf"]').forEach(el => { el.textContent = asOf; });
+    }
+
     function renderDQ() {
-      const sa = cache.sa || [];
       const ts = cache.timesheet || [];
       const cases = cache.cases || [];
 
-      let saMismatch = 0;
-      for (const r of sa) {
-        const a = Number(r.accurate_case) || 0;
-        const n = Number(r.not_accurate_case) || 0;
-        const denom = a + n;
-        const ratioPct = Number(r.ratio_pct);
+      destroyAnalyticsCharts();
 
-        if (!denom || !Number.isFinite(ratioPct)) continue;
+      const totalAvail = ts.reduce((a, x) => a + (Number(x.available_hour) || 0), 0);
+      const totalAch = ts.reduce((a, x) => a + (Number(x.ach) || 0), 0);
+      const totalTdt = ts.reduce((a, x) => a + (Number(x.tdt) || 0), 0);
+      const totalEfh = ts.reduce((a, x) => a + (Number(x.efh) || 0), 0);
+      const jaPct = calcPct(totalAch, totalAvail);
+      const jePct = calcPct(totalEfh, totalAch);
 
-        const calcPct = (a / denom) * 100;
-        if (Math.abs(calcPct - ratioPct) > 0.2) saMismatch++;
+      const qtyBySource = ts.reduce((acc, r) => {
+        const key = String(r.ut_partner || "").toLowerCase();
+        const qty = Number(r.sa_count) || 0;
+        if (key.includes("partner")) acc.partner += qty;
+        else acc.ut += qty;
+        return acc;
+      }, { ut: 0, partner: 0 });
+
+      if (!qtyBySource.ut && !qtyBySource.partner && cases.length) {
+        qtyBySource.ut = cases.length;
       }
 
-      let efhM = 0, jaM = 0, jeM = 0;
-      for (const r of ts) {
-        const ach = Number(r.ach);
-        const tdt = Number(r.tdt);
-        const efh = Number(r.efh);
-        const av = Number(r.available_hour);
-        const ja = Number(r.ja);
-        const je = Number(r.je);
+      document.getElementById("perfQtyUT").textContent = formatNumber(qtyBySource.ut);
+      document.getElementById("perfQtyPartner").textContent = formatNumber(qtyBySource.partner);
+      document.getElementById("perfJaValue").textContent = jaPct == null ? "-" : formatPercent(jaPct, 0);
+      document.getElementById("perfJeValue").textContent = jePct == null ? "-" : formatPercent(jePct, 0);
 
-        if (Number.isFinite(ach) && Number.isFinite(tdt) && Number.isFinite(efh)) {
-          if (Math.abs((ach - tdt) - efh) > 0.5) efhM++;
-        }
+      const periodInfo = document.getElementById("perfPeriodInfo");
+      if (periodInfo) periodInfo.textContent = `Periode aktif: ${periodLabelCurrent()}`;
 
-        if (Number.isFinite(av) && av !== 0 && Number.isFinite(ach) && Number.isFinite(ja)) {
-          const calc = (ach / av) * 100;
-          if (Math.abs(calc - ja) > 2) jaM++;
-        }
+      const dataInfo = document.getElementById("perfDataInfo");
+      if (dataInfo) dataInfo.textContent = `Detail SA: ${formatNumber(cases.length)} case • TimeSheet: ${formatNumber(ts.length)} row`;
 
-        if (Number.isFinite(ach) && ach !== 0 && Number.isFinite(efh) && Number.isFinite(je)) {
-          const calc = (efh / ach) * 100;
-          if (Math.abs(calc - je) > 2) jeM++;
-        }
-      }
+      const availTrend = buildMetricByMonth("available");
+      const achTrend = buildMetricByMonth("ach");
+      const tdtTrend = buildMetricByMonth("tdt");
+      const efhTrend = buildMetricByMonth("efh");
+      const jaTrend = buildMetricByMonth("ja");
+      const jeTrend = buildMetricByMonth("je");
 
-      if (document.getElementById("dq_caseTotal")) {
-        document.getElementById("dq_caseTotal").textContent = String(cases.length);
-      }
+      renderBarTrend("perfAvailTrendChart", availTrend.labels, availTrend.values, "Available Hours");
+      renderBarTrend("perfAchTrendChart", achTrend.labels, achTrend.values, "Man Hours");
+      renderBarTrend("perfTdtTrendChart", tdtTrend.labels, tdtTrend.values, "Development Hours");
+      renderBarTrend("perfEfhTrendChart", efhTrend.labels, efhTrend.values, "Effective Hours");
+      renderBarTrend("perfJaTrendChart", jaTrend.labels, jaTrend.values, "Job Availability", true);
+      renderBarTrend("perfJeTrendChart", jeTrend.labels, jeTrend.values, "Job Effectiveness", true);
 
-      document.getElementById("dq_saMismatch").textContent = String(saMismatch);
-      document.getElementById("dq_saTotal").textContent = String(sa.length);
+      renderHorizontalBar("perfAvailAreaChart", buildMetricByArea(ts, "available"), "available", "Available Hours");
+      renderHorizontalBar("perfAchAreaChart", buildMetricByArea(ts, "ach"), "ach", "Man Hours");
+      renderHorizontalBar("perfTdtAreaChart", buildMetricByArea(ts, "tdt"), "tdt", "Development Hours");
+      renderHorizontalBar("perfEfhAreaChart", buildMetricByArea(ts, "efh"), "efh", "Effective Hours");
 
-      document.getElementById("dq_efhMismatch").textContent = String(efhM);
-      document.getElementById("dq_jaMismatch").textContent = String(jaM);
-      document.getElementById("dq_jeMismatch").textContent = String(jeM);
-      document.getElementById("dq_tsTotal").textContent = String(ts.length);
+      const saArea = buildSaByArea(cases).map(x => ({ label: x.label, value: x.value }));
+      renderHorizontalBar("perfSaAreaChart", saArea, "value", "Qty SA");
+      renderAccuracyChart(cases);
+
+      setPerfAsOf();
     }
 
     function upsertLiveJob(row) {
@@ -2242,6 +2675,13 @@ function startFastUpdateRealtime() {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheets.rasioSa), "Rasio SA");
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheets.timesheet), "Timesheet");
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheets.detailSa), "Detail SA");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+        { Indikator: "Performance Menu", Nilai: "Performance Analytics" },
+        { Indikator: "Sumber Data", Nilai: "Detail SA + TimeSheet" },
+        { Indikator: "Periode Aktif", Nilai: cache.periodKey || "-" },
+        { Indikator: "Total Case Detail SA", Nilai: (cache.cases || []).length },
+        { Indikator: "Total TimeSheet Rows", Nilai: (cache.timesheet || []).length }
+      ]), "Performance");
 
       const filename = `sangkulirang-dashboard-${safeFileNamePart(cache.periodKey)}.xlsx`;
       XLSX.writeFile(wb, filename);
